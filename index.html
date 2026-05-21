@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日食谱 - 5菜1汤</title>
+<style>
+:root {
+  --primary: #4CAF50;
+  --primary-light: #C8E6C9;
+  --primary-dark: #388E3C;
+  --bg: #F5F7FA;
+  --card-bg: #FFFFFF;
+  --text: #333333;
+  --text-secondary: #666666;
+  --text-light: #999999;
+  --border: #E8ECF1;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --shadow-hover: 0 8px 25px rgba(0,0,0,0.12);
+  --tag-bg: #E8F5E9;
+  --tag-text: #2E7D32;
+  --badge-meat: #FF6B6B;
+  --badge-veg: #4CAF50;
+  --badge-soup: #FFA726;
+  --modal-overlay: rgba(0,0,0,0.5);
+  --accent: #FF7043;
+  --radius: 16px;
+  --radius-sm: 8px;
+  --transition: 0.3s ease;
+}
+[data-theme="orange"] {
+  --primary: #FF7043; --primary-light: #FFE0B2; --primary-dark: #E64A19;
+  --tag-bg: #FFF3E0; --tag-text: #E65100; --accent: #FFA726;
+}
+[data-theme="blue"] {
+  --primary: #42A5F5; --primary-light: #BBDEFB; --primary-dark: #1E88E5;
+  --tag-bg: #E3F2FD; --tag-text: #1565C0; --accent: #5C6BC0;
+}
+[data-theme="purple"] {
+  --primary: #7E57C2; --primary-light: #D1C4E9; --primary-dark: #512DA8;
+  --tag-bg: #EDE7F6; --tag-text: #4527A0; --accent: #E91E63;
+}
+[data-theme="warm"] {
+  --primary: #8D6E63; --primary-light: #D7CCC8; --primary-dark: #5D4037;
+  --bg: #FAF8F5; --card-bg: #FFFDF9; --tag-bg: #EFEBE9; --tag-text: #4E342E; --accent: #BF360C;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  background: var(--bg); color: var(--text); min-height: 100vh;
+  transition: background var(--transition), color var(--transition); line-height: 1.6;
+}
+header {
+  background: var(--card-bg); box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  position: sticky; top:0; z-index:100;
+  transition: background var(--transition);
+}
+.header-inner {
+  max-width:1200px; margin:0 auto; padding:16px 24px;
+  display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;
+}
+.logo { font-size:26px; font-weight:700; color:var(--primary); transition:color var(--transition); white-space:nowrap; }
+.header-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.date-badge {
+  background:var(--primary-light); color:var(--primary-dark); padding:6px 14px;
+  border-radius:20px; font-size:14px; font-weight:500;
+  transition:background var(--transition),color var(--transition); white-space:nowrap;
+}
+.theme-picker { display:flex; gap:6px; align-items:center; }
+.theme-dot {
+  width:28px; height:28px; border-radius:50%; border:2px solid transparent;
+  cursor:pointer; transition:transform var(--transition),border-color var(--transition);
+}
+.theme-dot:hover { transform:scale(1.15); }
+.theme-dot.active { border-color:var(--text); transform:scale(1.1); }
+.theme-dot.green { background:#4CAF50; }
+.theme-dot.orange { background:#FF7043; }
+.theme-dot.blue { background:#42A5F5; }
+.theme-dot.purple { background:#7E57C2; }
+.theme-dot.warm { background:#8D6E63; }
+.cal-btn {
+  background:var(--primary); color:#fff; border:none; padding:8px 18px;
+  border-radius:20px; cursor:pointer; font-size:14px; font-weight:500;
+  transition:background var(--transition),transform var(--transition); white-space:nowrap;
+}
+.cal-btn:hover { background:var(--primary-dark); transform:translateY(-1px); }
+.today-btn {
+  background:transparent; color:var(--primary); border:1.5px solid var(--primary);
+  padding:8px 18px; border-radius:20px; cursor:pointer; font-size:14px; font-weight:500;
+  transition:all var(--transition); white-space:nowrap; display:none;
+}
+.today-btn:hover { background:var(--primary-light); }
+
+/* Room styles */
+.room-badge {
+  background:var(--primary); color:#fff; padding:5px 12px;
+  border-radius:14px; font-size:12px; font-weight:600;
+  white-space:nowrap; animation:fadeIn 0.3s ease;
+}
+.room-btn {
+  background:transparent; border:1.5px dashed var(--border);
+  padding:6px 14px; border-radius:16px; cursor:pointer;
+  font-size:13px; color:var(--text-secondary); transition:all var(--transition);
+  white-space:nowrap;
+}
+.room-btn:hover { border-color:var(--primary); color:var(--primary); }
+.room-btn:active { transform:scale(0.95); }
+.share-btn, .leave-room-btn {
+  background:transparent; border:none; cursor:pointer;
+  font-size:18px; padding:4px 8px; border-radius:50%;
+  transition:all var(--transition); color:var(--text-secondary);
+  line-height:1; width:32px; height:32px; display:flex; align-items:center; justify-content:center;
+}
+.share-btn:hover { background:var(--primary-light); color:var(--primary); }
+.leave-room-btn:hover { background:#FFEBEE; color:#E53935; }
+.room-toast {
+  position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
+  background:#333; color:#fff; padding:12px 28px; border-radius:24px;
+  font-size:14px; z-index:500; box-shadow:0 8px 30px rgba(0,0,0,0.2);
+  transition:opacity 0.3s ease; pointer-events:none; display:none;
+}
+.room-divider {
+  width:1px; height:20px; background:var(--border); margin:0 2px;
+  transition:background var(--transition);
+}
+.room-status {
+  font-size:11px; color:var(--primary); font-weight:500;
+  animation:fadeIn 0.3s ease; white-space:nowrap;
+}
+
+main { max-width:1200px; margin:0 auto; padding:24px; }
+.date-heading { text-align:center; font-size:22px; font-weight:600; color:var(--text); margin-bottom:4px; }
+.daily-subtitle { text-align:center; color:var(--text-secondary); font-size:14px; margin-bottom:28px; }
+.recipe-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+@media (max-width:1024px) { .recipe-grid { grid-template-columns:repeat(2,1fr); } }
+@media (max-width:640px) { .recipe-grid { grid-template-columns:1fr; } }
+.recipe-card {
+  background:var(--card-bg); border-radius:var(--radius); overflow:hidden;
+  box-shadow:var(--shadow); transition:box-shadow var(--transition),transform var(--transition),background var(--transition);
+  cursor:pointer; display:flex; flex-direction:column;
+}
+.recipe-card:hover { box-shadow:var(--shadow-hover); transform:translateY(-3px); }
+.card-img-wrap {
+  position:relative; width:100%; padding-top:56%;
+  background:var(--primary-light); transition:background var(--transition);
+  overflow:hidden;
+}
+.card-icon {
+  position:absolute; top:0; left:0; right:0; bottom:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:72px; line-height:1;
+  transition:transform var(--transition);
+}
+.recipe-card:hover .card-icon { transform:scale(1.15); }
+.card-category {
+  position:absolute; top:12px; left:12px; padding:4px 12px;
+  border-radius:12px; font-size:12px; font-weight:600; color:#fff; z-index:1;
+}
+.cat-meat { background:var(--badge-meat); }
+.cat-veg { background:var(--badge-veg); }
+.cat-soup { background:var(--badge-soup); }
+.card-body { padding:16px 18px; flex:1; display:flex; flex-direction:column; }
+.card-name { font-size:18px; font-weight:600; margin-bottom:4px; color:var(--text); }
+.card-desc { font-size:13px; color:var(--text-secondary); margin-bottom:8px; line-height:1.5; }
+.card-meta { display:flex; gap:16px; font-size:12px; color:var(--text-light); margin-bottom:12px; }
+.card-expand { margin-top:auto; padding-top:12px; border-top:1px solid var(--border); display:none; transition:border-color var(--transition); }
+.recipe-card.expanded .card-expand { display:block; }
+.card-expand h4 { font-size:13px; color:var(--primary); margin:10px 0 4px; transition:color var(--transition); }
+.card-expand h4:first-child { margin-top:0; }
+.card-expand ul { list-style:none; padding-left:0; }
+.card-expand ul li { font-size:13px; color:var(--text-secondary); padding:2px 0 2px 14px; position:relative; }
+.card-expand ul li::before { content:"•"; position:absolute; left:0; color:var(--primary); transition:color var(--transition); }
+.card-expand ol { padding-left:18px; }
+.card-expand ol li { font-size:13px; color:var(--text-secondary); padding:2px 0; line-height:1.6; }
+.card-toggle { text-align:center; color:var(--primary); font-size:13px; cursor:pointer; padding:8px 0 0; user-select:none; transition:color var(--transition); }
+.card-toggle:hover { opacity:0.7; }
+.recipe-card.soup-card { border:2px solid var(--badge-soup); position:relative; }
+.recipe-card.soup-card::before {
+  content:"今日汤品";
+  position:absolute; top:8px; right:12px; z-index:1;
+  background:var(--badge-soup); color:#fff; padding:2px 10px;
+  border-radius:10px; font-size:11px; font-weight:600;
+}
+.refresh-btn {
+  background:transparent; color:var(--accent); border:1.5px solid var(--accent);
+  padding:8px 18px; border-radius:20px; cursor:pointer; font-size:14px; font-weight:500;
+  transition:all var(--transition); white-space:nowrap;
+}
+.refresh-btn:hover { background:var(--accent); color:#fff; transform:translateY(-1px); }
+.refresh-btn:active { transform:scale(0.95); }
+.modal-overlay {
+  display:none; position:fixed; top:0; left:0; right:0; bottom:0;
+  background:var(--modal-overlay); z-index:200; justify-content:center; align-items:center; padding:20px;
+}
+.modal-overlay.active { display:flex; }
+.modal {
+  background:var(--card-bg); border-radius:var(--radius); max-width:600px; width:100%;
+  max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.2); transition:background var(--transition);
+}
+.modal-header {
+  padding:20px 24px; border-bottom:1px solid var(--border); display:flex;
+  justify-content:space-between; align-items:center; position:sticky; top:0;
+  background:var(--card-bg); z-index:1; transition:background var(--transition),border-color var(--transition);
+}
+.modal-header h3 { font-size:18px; color:var(--text); }
+.modal-close {
+  width:32px; height:32px; border:none; background:var(--border); border-radius:50%;
+  cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center;
+  color:var(--text-secondary); transition:background var(--transition);
+}
+.modal-close:hover { background:#ddd; }
+.modal-body { padding:20px 24px; }
+.cal-nav { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.cal-nav button {
+  background:transparent; border:1px solid var(--border); padding:6px 14px;
+  border-radius:var(--radius-sm); cursor:pointer; font-size:16px; color:var(--text);
+  transition:all var(--transition);
+}
+.cal-nav button:hover { background:var(--primary-light); }
+.cal-nav button:disabled { opacity:0.3; cursor:not-allowed; }
+.cal-nav .cal-month-label { font-size:16px; font-weight:600; color:var(--text); }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; text-align:center; }
+.cal-day-header { font-size:12px; color:var(--text-light); padding:8px 0; font-weight:600; }
+.cal-day {
+  aspect-ratio:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  border-radius:var(--radius-sm); cursor:pointer; font-size:14px; transition:all var(--transition);
+  position:relative; border:1px solid transparent;
+}
+.cal-day:hover { background:var(--primary-light); }
+.cal-day.today { border-color:var(--primary); font-weight:700; color:var(--primary); }
+.cal-day.has-recipe { background:var(--tag-bg); font-weight:600; }
+.cal-day.has-recipe::after { content:""; width:5px; height:5px; background:var(--primary); border-radius:50%; position:absolute; bottom:4px; }
+.cal-day.other-month { color:#ccc; cursor:default; }
+.cal-day.future { color:#ccc; cursor:default; pointer-events:none; }
+.cal-day.selected { background:var(--primary); color:#fff; }
+.cal-recipes { margin-top:16px; border-top:1px solid var(--border); padding-top:16px; transition:border-color var(--transition); }
+.cal-recipes h4 { font-size:15px; margin-bottom:10px; color:var(--text); }
+.cal-recipe-item {
+  padding:10px 14px; background:var(--bg); border-radius:var(--radius-sm);
+  margin-bottom:8px; cursor:pointer; transition:background var(--transition);
+  display:flex; align-items:center; gap:10px;
+}
+.cal-recipe-item:hover { filter:brightness(0.96); }
+.cal-recipe-item .cal-recipe-badge { padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; color:#fff; white-space:nowrap; }
+.cal-recipe-item .cal-recipe-name { font-size:14px; color:var(--text); font-weight:500; }
+footer { text-align:center; padding:32px 24px; color:var(--text-light); font-size:13px; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+.recipe-card { animation:fadeIn 0.4s ease forwards; }
+.recipe-card:nth-child(1) { animation-delay:0.05s; }
+.recipe-card:nth-child(2) { animation-delay:0.10s; }
+.recipe-card:nth-child(3) { animation-delay:0.15s; }
+.recipe-card:nth-child(4) { animation-delay:0.20s; }
+.recipe-card:nth-child(5) { animation-delay:0.25s; }
+.recipe-card:nth-child(6) { animation-delay:0.30s; }
+@media (max-width:640px) {
+  .header-inner { padding:12px 16px; }
+  .logo { font-size:20px; }
+  .header-right { gap:8px; }
+  main { padding:16px; }
+  .recipe-grid { gap:14px; }
+  .date-heading { font-size:18px; }
+  .card-name { font-size:16px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">每日食谱</div>
+    <div class="header-right">
+      <span class="date-badge" id="dateBadge"></span>
+      <div class="theme-picker" id="themePicker">
+        <span style="font-size:12px;color:var(--text-light);margin-right:2px;">主题</span>
+        <div class="theme-dot green active" data-theme="default" title="清新绿"></div>
+        <div class="theme-dot orange" data-theme="orange" title="温暖橙"></div>
+        <div class="theme-dot blue" data-theme="blue" title="简约蓝"></div>
+        <div class="theme-dot purple" data-theme="purple" title="优雅紫"></div>
+        <div class="theme-dot warm" data-theme="warm" title="经典棕"></div>
+      </div>
+      <span class="room-divider"></span>
+      <button class="room-btn" id="roomCreateBtn" title="创建共享房间，与朋友一起看菜谱">🔗 共享</button>
+      <button class="room-btn" id="roomJoinBtn" title="输入房间码加入朋友的房间">🔍 加入</button>
+      <span class="room-badge" id="roomBadge" style="display:none;"></span>
+      <span class="room-status" id="roomStatus" style="display:none;"></span>
+      <button class="share-btn" id="shareBtn" style="display:none;" title="复制分享链接">📋</button>
+      <button class="leave-room-btn" id="leaveBtn" style="display:none;" title="退出共享房间">✕</button>
+      <span class="room-divider" id="roomDivider2"></span>
+      <button class="refresh-btn" id="refreshBtn" title="刷新今日菜谱">🔄 换一换</button>
+      <button class="today-btn" id="todayBtn" title="回到今天">今天</button>
+      <button class="cal-btn" id="calBtn">📅 历史食谱</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <h2 class="date-heading" id="dateHeading"></h2>
+  <p class="daily-subtitle" id="dailySubtitle"></p>
+  <div class="recipe-grid" id="recipeGrid"></div>
+</main>
+
+<footer>每日新鲜搭配，好好吃饭</footer>
+
+<div class="modal-overlay" id="calOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>历史食谱</h3>
+      <button class="modal-close" id="calClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="cal-nav">
+        <button id="calPrev">◀</button>
+        <span class="cal-month-label" id="calMonthLabel"></span>
+        <button id="calNext">▶</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-recipes" id="calRecipes">
+        <p style="color:var(--text-light);text-align:center;padding:20px 0;">点击日期查看当天食谱</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="room-toast" id="roomToast"></div>
+
+<script>
+// ============ Supabase API (fetch-based, no CDN needed) ============
+var API_URL = 'https://nfkgioyjttzzyieobfsv.supabase.co/rest/v1/rooms';
+var API_KEY = 'sb_publishable_OM3lgcufU-kc34sfAy8Z4Q_jgMtyrMM';
+var API_HEADERS = {
+  'apikey': API_KEY,
+  'Authorization': 'Bearer ' + API_KEY,
+  'Content-Type': 'application/json'
+};
+
+function apiGet(path) {
+  return fetch(API_URL + path, { headers: API_HEADERS }).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  });
+}
+
+function apiPost(body) {
+  return fetch(API_URL, {
+    method: 'POST',
+    headers: Object.assign({ 'Prefer': 'return=representation' }, API_HEADERS),
+    body: JSON.stringify(body)
+  }).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  });
+}
+
+function apiPatch(code, body) {
+  return fetch(API_URL + '?code=eq.' + encodeURIComponent(code), {
+    method: 'PATCH',
+    headers: Object.assign({ 'Prefer': 'return=representation' }, API_HEADERS),
+    body: JSON.stringify(body)
+  }).then(function(r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  });
+}
+
+// ============ Room State ============
+var currentRoom = null;
+var _pollTimer = null;
+var _lastSyncTime = 0;
+
+function generateRoomCode() {
+  const CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 6; i++) code += CHARS[Math.floor(Math.random() * CHARS.length)];
+  return code;
+}
+
+function getShareUrl(code) {
+  var url = new URL(window.location.href);
+  url.searchParams.set('room', code);
+  return url.toString();
+}
+
+function updateRoomUI() {
+  var badge = document.getElementById('roomBadge');
+  var status = document.getElementById('roomStatus');
+  var shareBtn = document.getElementById('shareBtn');
+  var leaveBtn = document.getElementById('leaveBtn');
+  var createBtn = document.getElementById('roomCreateBtn');
+  var joinBtn = document.getElementById('roomJoinBtn');
+  if (currentRoom) {
+    badge.style.display = 'inline-flex';
+    badge.textContent = '🏠 ' + currentRoom.code;
+    status.style.display = 'inline';
+    status.textContent = '共享中';
+    shareBtn.style.display = 'inline-flex';
+    leaveBtn.style.display = 'inline-flex';
+    createBtn.style.display = 'none';
+    joinBtn.style.display = 'none';
+  } else {
+    badge.style.display = 'none';
+    status.style.display = 'none';
+    shareBtn.style.display = 'none';
+    leaveBtn.style.display = 'none';
+    createBtn.style.display = 'inline-block';
+    joinBtn.style.display = 'inline-block';
+  }
+}
+
+function showToast(msg) {
+  var t = document.getElementById('roomToast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  t.style.opacity = '1';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function() {
+    t.style.opacity = '0';
+    setTimeout(function() { t.style.display = 'none'; }, 300);
+  }, 2500);
+}
+
+// ============ RECIPES DATA ============
+var RECIPES = [
+  { id:1, name:"红烧肉", category:"荤菜", cookingTime:"60分钟", difficulty:"中等", description:"色泽红亮、肥而不腻、入口即化的经典家常硬菜", image:"", mainIngredients:["五花肉 500g","葱 2根","姜 5片","八角 2个","桂皮 1小块"], seasonings:["生抽 2勺","老抽 1勺","料酒 2勺","冰糖 30g","盐 适量"], steps:["五花肉切成3cm方块，冷水下锅加姜片料酒焯水2分钟，撇去浮沫捞出洗净","锅中放少许油，下冰糖小火慢炒至融化变成琥珀色","放入五花肉快速翻炒上色，加入葱段、姜片、八角、桂皮炒出香味","加入料酒、生抽、老抽翻炒均匀，倒入足量热水没过肉面","大火烧开转小火盖盖炖40-50分钟，至筷子能轻松插入肉皮","开盖大火收汁，不断翻动防止粘锅，至汤汁浓稠红亮即可出锅"] },
+  { id:2, name:"宫保鸡丁", category:"荤菜", cookingTime:"25分钟", difficulty:"中等", description:"花生酥脆、鸡肉嫩滑、酸甜微辣的经典川菜", image:"", mainIngredients:["鸡胸肉 300g","花生米 50g","黄瓜 半根","胡萝卜 半根","干辣椒 6个","花椒 1小撮"], seasonings:["生抽 2勺","醋 1勺","白糖 1勺","淀粉 1勺","料酒 1勺","盐 少许"], steps:["鸡胸肉切1.5cm小丁，加料酒、淀粉、少许盐抓匀腌制15分钟","黄瓜、胡萝卜切丁；花生米小火炒至微黄盛出备用","调碗汁：生抽、醋、白糖、淀粉、少许水混合搅匀","锅中多油，油温六成下鸡丁滑炒至变白盛出","留底油，下干辣椒段和花椒小火炸香，放入胡萝卜丁翻炒1分钟","倒入鸡丁、黄瓜丁翻炒均匀，淋入碗汁快速翻匀，最后加花生米翻几下出锅"] },
+  { id:3, name:"鱼香肉丝", category:"荤菜", cookingTime:"20分钟", difficulty:"中等", description:"酸甜咸辣完美融合，无敌下饭的川味名菜", image:"", mainIngredients:["猪里脊肉 250g","木耳 50g","胡萝卜 半根","青椒 1个","蒜 3瓣","姜 1小块"], seasonings:["郫县豆瓣酱 1勺","生抽 2勺","醋 1.5勺","白糖 1.5勺","淀粉 1勺","料酒 1勺"], steps:["猪里脊切细丝，加料酒、淀粉、少许盐抓匀腌制10分钟","木耳泡发切丝，胡萝卜、青椒切丝，蒜姜切末","调鱼香汁：生抽、醋、白糖、淀粉、2勺水混合搅匀","锅中油热，下肉丝滑炒至变色盛出","留底油，下豆瓣酱小火炒出红油，加姜蒜末炒香","倒入胡萝卜木耳青椒翻炒断生，加肉丝翻炒，淋入鱼香汁大火翻匀出锅"] },
+  { id:4, name:"糖醋排骨", category:"荤菜", cookingTime:"40分钟", difficulty:"中等", description:"酸甜可口、色泽诱人，大人小孩都爱吃", image:"", mainIngredients:["猪小排 500g","葱 2根","姜 5片","蒜 3瓣"], seasonings:["料酒 2勺","生抽 2勺","老抽 半勺","醋 3勺","白糖 3勺","番茄酱 1勺"], steps:["排骨洗净冷水下锅，加姜片料酒焯水3分钟，捞出洗净沥干","调糖醋汁：料酒、生抽、老抽、醋、白糖、番茄酱混合搅匀","锅中少油，下排骨中火煎至两面微黄","加入葱姜蒜炒香，倒入糖醋汁翻炒均匀","加入刚好没过排骨的热水，大火烧开转小火炖25分钟","开盖大火收汁，不断翻动让排骨均匀裹上酱汁，至浓稠拉丝出锅撒芝麻"] },
+  { id:5, name:"回锅肉", category:"荤菜", cookingTime:"30分钟", difficulty:"简单", description:"肥而不腻、焦香四溢，川菜中的扛把子", image:"", mainIngredients:["二刀肉（猪后臀肉）300g","蒜苗 4根","青椒 2个","姜 3片"], seasonings:["郫县豆瓣酱 1.5勺","甜面酱 半勺","生抽 1勺","料酒 1勺","白糖 少许"], steps:["整块猪肉冷水下锅，加姜片料酒，煮约20分钟至筷子能扎透","捞出放凉后切成薄片（越薄越好）","蒜苗斜切段，青椒切块","锅中不放油，直接下肉片中火煸炒至出油卷曲（灯盏窝状）","把肉推到一边，下豆瓣酱小火炒出红油，加甜面酱炒香","和肉一起翻炒，加生抽白糖调味，最后放蒜苗青椒大火翻炒至断生"] },
+  { id:6, name:"水煮肉片", category:"荤菜", cookingTime:"25分钟", difficulty:"中等", description:"麻辣鲜香、肉片嫩滑、红亮诱人的重口味名菜", image:"", mainIngredients:["猪里脊肉 300g","生菜 1颗","豆芽 150g","蒜 5瓣","姜 1小块","干辣椒 10个","花椒 1大勺"], seasonings:["郫县豆瓣酱 2勺","生抽 1勺","料酒 1勺","淀粉 1勺","辣椒面 1勺","盐 适量"], steps:["里脊肉切薄片，加料酒、淀粉、少许盐和蛋清抓匀腌制15分钟","豆芽焯水，生菜洗净撕大片铺在碗底","锅中油热，下干辣椒段和花椒小火炸香捞出切碎（刀口辣椒）","锅中留油，下豆瓣酱炒出红油，加姜蒜末炒香，加适量水烧开","加生抽和盐调味，水开后将肉片一片片下入，煮至变白（约1分钟）","连汤带肉倒入菜碗中，撒上刀口辣椒、蒜末和辣椒面，浇一勺滚烫热油激香"] },
+  { id:7, name:"葱爆牛肉", category:"荤菜", cookingTime:"15分钟", difficulty:"简单", description:"牛肉滑嫩、葱香浓郁，快手又美味", image:"", mainIngredients:["牛里脊 300g","大葱 3根","姜 1小块"], seasonings:["生抽 2勺","老抽 半勺","料酒 1勺","淀粉 1勺","蚝油 1勺","白糖 少许"], steps:["牛里脊逆纹切薄片，加料酒、生抽、淀粉、少许油抓匀腌制15分钟","大葱斜切段，姜切丝","调碗汁：生抽、老抽、蚝油、白糖、2勺水混合搅匀","锅中多油大火烧热，下牛肉快速滑炒至变色立即盛出（约30秒）","留底油下姜丝葱段大火爆香","倒回牛肉，淋入碗汁，大火快速翻匀10秒立刻出锅"] },
+  { id:8, name:"可乐鸡翅", category:"荤菜", cookingTime:"25分钟", difficulty:"简单", description:"咸甜适口、色泽诱人，零失败的懒人硬菜", image:"", mainIngredients:["鸡翅中 10个","姜 5片","葱 2根"], seasonings:["可乐 1罐（330ml）","生抽 2勺","老抽 半勺","料酒 1勺","盐 少许"], steps:["鸡翅洗净，正反面各划两刀方便入味","冷水下锅加姜片料酒焯水2分钟，捞出洗净沥干","锅中少油，鸡翅皮朝下放入，中小火煎至两面金黄","倒入可乐、生抽、老抽，加入姜片葱段","大火烧开转中火炖15分钟","开盖大火收汁，不停翻动让鸡翅均匀裹上酱汁，至浓稠即可"] },
+  { id:9, name:"红烧排骨", category:"荤菜", cookingTime:"50分钟", difficulty:"中等", description:"酱香浓郁、骨酥肉烂，百吃不厌的家常硬菜", image:"", mainIngredients:["猪肋排 600g","葱 2根","姜 5片","八角 2个","香叶 2片"], seasonings:["生抽 2勺","老抽 1勺","料酒 2勺","冰糖 25g","蚝油 1勺","盐 适量"], steps:["排骨剁成小段，冷水下锅加姜片料酒焯水3分钟，捞出洗净","锅中少油下冰糖小火炒糖色，至琥珀色时放入排骨快速翻炒上色","加入葱姜八角香叶炒香，加料酒生抽老抽蚝油翻炒均匀","倒入没过排骨的热水，大火烧开转小火盖盖炖35分钟","开盖加盐调味，大火收汁至汤汁浓稠挂在排骨上","出锅装盘，可撒少许白芝麻和葱花点缀"] },
+  { id:10, name:"青椒肉丝", category:"荤菜", cookingTime:"15分钟", difficulty:"简单", description:"家常得不能再家常，却是最经典的下饭菜", image:"", mainIngredients:["猪里脊肉 250g","青椒 3个","姜 1小块","蒜 2瓣"], seasonings:["生抽 2勺","料酒 1勺","淀粉 1勺","蚝油 1勺","盐 少许"], steps:["里脊肉切细丝，加料酒、生抽、淀粉抓匀腌制10分钟","青椒去籽切丝，姜蒜切末","锅中油热，下肉丝滑炒至变色盛出","留底油爆香姜蒜末，下青椒丝大火翻炒至断生","倒回肉丝，加蚝油和少许盐调味","大火快速翻匀即可出锅"] },
+  { id:11, name:"麻婆豆腐", category:"荤菜", cookingTime:"15分钟", difficulty:"简单", description:"麻辣烫香，豆腐嫩滑，川菜之魂", image:"", mainIngredients:["嫩豆腐 1盒","猪肉末 100g","蒜 3瓣","姜 1小块","葱花 适量"], seasonings:["郫县豆瓣酱 1.5勺","豆豉 1小勺","辣椒面 1勺","花椒粉 1小勺","生抽 1勺","淀粉 1勺"], steps:["豆腐切成2cm方块，放入加盐的热水中浸泡5分钟（不易碎）","锅中油热，下肉末炒至酥香变色","加入豆瓣酱小火炒出红油，加姜蒜末、豆豉、辣椒面炒香","加入一碗水烧开，加生抽调味","轻轻滑入豆腐，不要翻动，小火煮5分钟让豆腐入味","淋入水淀粉勾芡，轻轻推匀，出锅撒花椒粉和葱花"] },
+  { id:12, name:"孜然羊肉", category:"荤菜", cookingTime:"15分钟", difficulty:"简单", description:"孜然味浓、羊肉鲜嫩，秒杀路边摊", image:"", mainIngredients:["羊腿肉 350g","洋葱 半个","香菜 1小把"], seasonings:["孜然粉 1.5勺","辣椒面 1勺","生抽 1勺","料酒 1勺","淀粉 1勺","盐 适量"], steps:["羊肉逆纹切薄片，加料酒、生抽、淀粉抓匀腌制15分钟","洋葱切丝，香菜切段","锅中多油大火烧热，下羊肉快速滑炒至变色盛出","留底油下洋葱丝大火翻炒至软","倒回羊肉，撒孜然粉、辣椒面、盐，大火快速翻炒均匀","出锅前撒香菜段，翻两下即可装盘"] },
+  { id:13, name:"红烧鱼", category:"荤菜", cookingTime:"30分钟", difficulty:"中等", description:"鱼肉鲜嫩入味，酱汁浓郁，宴客必备", image:"", mainIngredients:["鲫鱼/罗非鱼 1条（约500g）","葱 2根","姜 5片","蒜 5瓣"], seasonings:["生抽 2勺","老抽 半勺","料酒 2勺","醋 半勺","白糖 1小勺","郫县豆瓣酱 1勺"], steps:["鱼处理干净，两面各划三刀，用厨房纸擦干水分","锅中油热，撒少许盐在油里，放入鱼中小火煎至两面金黄盛出","留底油下豆瓣酱炒出红油，加葱姜蒜炒香","加入生抽老抽料酒醋白糖和一碗水烧开","放入煎好的鱼，中小火炖10分钟，中途翻面一次","大火收汁，不停把汤汁浇在鱼身上，至浓稠出锅撒葱花"] },
+  { id:14, name:"清蒸鲈鱼", category:"荤菜", cookingTime:"20分钟", difficulty:"简单", description:"鲜嫩无比、原汁原味，最能体现鱼本身鲜美", image:"", mainIngredients:["鲈鱼 1条（约500g）","葱 3根","姜 1大块","红椒 半个"], seasonings:["蒸鱼豉油 3勺","料酒 2勺","盐 少许","食用油 2勺"], steps:["鲈鱼处理干净，两面各划三刀，抹少许盐和料酒腌制10分钟","盘底铺姜片和葱段，放上鱼，鱼身上再铺姜丝","蒸锅水烧开后放入鱼，大火蒸8-10分钟","取出倒掉盘中蒸出的腥水，拿掉蒸过的姜葱","鱼身上重新铺上鲜葱丝、姜丝和红椒丝","淋上蒸鱼豉油，浇一勺滚烫热油激发出香味，即可上桌"] },
+  { id:15, name:"油焖大虾", category:"荤菜", cookingTime:"15分钟", difficulty:"简单", description:"色泽红亮、鲜甜弹牙，宴客硬菜", image:"", mainIngredients:["大虾 400g","葱 2根","姜 5片","蒜 3瓣"], seasonings:["生抽 1勺","料酒 1勺","白糖 1勺","番茄酱 1勺","盐 少许"], steps:["大虾剪去虾须虾枪，挑去虾线，洗净沥干","锅中多油，油热后下大虾中火煎至两面变红、虾壳酥脆盛出","留底油下姜蒜末炒香","加番茄酱、生抽、料酒、白糖和2勺水炒匀","倒回虾翻炒均匀，盖盖焖2分钟","开盖大火收汁，撒葱花翻匀出锅"] },
+  { id:16, name:"蒜蓉粉丝蒸虾", category:"荤菜", cookingTime:"15分钟", difficulty:"简单", description:"蒜香四溢、粉丝吸饱虾的鲜味，比虾还好吃", image:"", mainIngredients:["大虾 300g","粉丝 1把","蒜 1整头","葱 2根","小米辣 2个"], seasonings:["蒸鱼豉油 2勺","料酒 1勺","盐 少许","食用油 2勺"], steps:["粉丝温水泡软，大虾开背去虾线，蒜剁成蒜蓉","锅中少油，下一半蒜蓉小火炒至金黄（金银蒜）","将生蒜和熟蒜混合，加蒸鱼豉油和少许盐拌匀","盘底铺粉丝，摆上虾，每只虾背上铺蒜蓉","蒸锅水开，大火蒸6-8分钟","出锅撒葱花小米辣，浇一勺滚烫热油激香"] },
+  { id:17, name:"啤酒鸭", category:"荤菜", cookingTime:"50分钟", difficulty:"中等", description:"酒香醇厚、鸭肉酥烂入味，下饭下酒皆宜", image:"", mainIngredients:["鸭腿/鸭半只 600g","啤酒 1罐（500ml）","青椒 2个","姜 1大块","蒜 5瓣","干辣椒 5个"], seasonings:["生抽 2勺","老抽 1勺","料酒 1勺","郫县豆瓣酱 1勺","冰糖 15g","盐 适量"], steps:["鸭肉剁成块，冷水下锅加姜片料酒焯水3分钟，捞出洗净沥干","锅中少油，下鸭块中火煸炒至表面微焦出油（此步去腥关键）","加入姜蒜干辣椒和豆瓣酱炒出红油和香味","倒入一罐啤酒，加生抽老抽冰糖，大火烧开","转小火盖盖炖35分钟至鸭肉酥烂","开盖大火收汁，加青椒块翻炒至断生即可"] },
+  { id:18, name:"口水鸡", category:"荤菜", cookingTime:"40分钟", difficulty:"中等", description:"麻辣鲜香、鸡肉嫩滑、红油诱人，宴客凉菜之王", image:"", mainIngredients:["鸡腿 2个","黄瓜 1根","花生碎 2勺","芝麻 1勺","葱 2根","姜 5片","蒜 4瓣"], seasonings:["辣椒面 2勺","花椒粉 1小勺","生抽 2勺","醋 1勺","白糖 1小勺","花椒油 1小勺","盐 适量"], steps:["鸡腿冷水下锅，加姜片葱段料酒，煮约25分钟至熟透","捞出立即放入冰水中浸泡10分钟（皮脆肉嫩的关键）","黄瓜切丝铺盘底，鸡肉取出斩成块码在黄瓜上","碗中放辣椒面、花椒粉、蒜末、芝麻，浇一勺滚烫热油拌成红油","红油中加入生抽、醋、白糖、花椒油和少许盐搅匀","将红油汁均匀浇在鸡肉上，撒花生碎和葱花即可"] },
+  { id:19, name:"木须肉", category:"荤菜", cookingTime:"15分钟", difficulty:"简单", description:"荤素搭配、营养均衡，经典家常快手菜", image:"", mainIngredients:["猪里脊肉 200g","鸡蛋 2个","木耳 30g","黄花菜 20g","黄瓜 半根"], seasonings:["生抽 2勺","料酒 1勺","淀粉 1勺","盐 适量","香油 少许"], steps:["里脊肉切薄片，加料酒、淀粉抓匀腌制10分钟","木耳黄花菜提前泡发洗净，黄瓜切片，鸡蛋打散","锅中油热，鸡蛋炒熟盛出","锅中再加油，下肉片滑炒至变色","加入木耳黄花菜翻炒2分钟，加黄瓜片炒至断生","倒回鸡蛋，加生抽和盐调味翻炒均匀，出锅前淋香油"] },
+  { id:20, name:"锅包肉", category:"荤菜", cookingTime:"30分钟", difficulty:"中等", description:"外酥里嫩、酸甜可口，东北名菜", image:"", mainIngredients:["猪里脊肉 300g","胡萝卜 半根","葱 1根","姜 1小块","蒜 2瓣"], seasonings:["土豆淀粉 100g","白醋 3勺","白糖 3勺","生抽 1勺","盐 少许"], steps:["里脊肉切3mm厚片，加少许盐和料酒腌制10分钟","土豆淀粉加冷水调成糊状，静置沉淀后倒掉上层清水","肉片放入淀粉糊中抓匀，每片都挂上厚糊","锅中多油烧至六成热，逐片下肉炸至定形捞出","油温升至八成热，复炸至金黄酥脆捞出","锅中少油，下葱姜蒜胡萝卜丝炒香，加白糖白醋生抽小火熬至浓稠，倒入肉片快速翻匀出锅"] },
+  { id:21, name:"京酱肉丝", category:"荤菜", cookingTime:"15分钟", difficulty:"简单", description:"酱香浓郁、肉丝滑嫩，配豆腐皮吃绝了", image:"", mainIngredients:["猪里脊肉 300g","大葱 2根","豆腐皮 2张","黄瓜 半根"], seasonings:["甜面酱 2勺","生抽 1勺","料酒 1勺","淀粉 1勺","白糖 1小勺","香油 少许"], steps:["里脊肉切细丝，加料酒、淀粉、蛋清抓匀腌制15分钟","大葱只用葱白切细丝，黄瓜切丝，豆腐皮切方块温水泡软","锅中多油，下肉丝快速滑炒至变白盛出","留底油，小火下甜面酱炒香，加生抽白糖和2勺水熬至微稠","倒入肉丝翻炒均匀，让每根肉丝都裹满酱汁","出锅前淋少许香油，葱丝黄瓜丝码在盘边，豆腐皮用来卷着吃"] },
+  { id:22, name:"干煸四季豆", category:"荤菜", cookingTime:"20分钟", difficulty:"简单", description:"四季豆表面微焦起皱、配上肉末干辣椒，香辣下饭", image:"", mainIngredients:["四季豆 400g","猪肉末 80g","干辣椒 8个","花椒 1小撮","蒜 3瓣","姜 1小块"], seasonings:["生抽 1勺","盐 适量","白糖 少许"], steps:["四季豆去筋，掰成5cm段，洗净彻底沥干水分","锅中多油，油温七成下四季豆炸至表面皱皮起泡捞出控油","留底油，下肉末中小火煸炒至酥香微焦","加入干辣椒段、花椒、姜蒜末炒出香味","倒入四季豆，加生抽、盐、少许白糖调味","大火快速翻炒均匀，让调料裹在豆角上即可"] },
+  { id:23, name:"蒜苗炒肉", category:"荤菜", cookingTime:"15分钟", difficulty:"简单", description:"蒜苗清香、肉片入味，家常到不能再家常却百吃不厌", image:"", mainIngredients:["猪肉（五花或前腿）250g","蒜苗 6根","姜 1小块","蒜 2瓣"], seasonings:["生抽 2勺","料酒 1勺","老抽 半勺","豆瓣酱 半勺","盐 少许"], steps:["猪肉切薄片，加料酒生抽腌制10分钟","蒜苗斜切段，蒜白和蒜叶分开放","锅中少油，下肉片煸炒至出油微焦","加姜蒜豆瓣酱炒香，加老抽上色","先放蒜白翻炒1分钟至微软","再放蒜叶大火翻炒30秒，尝味补盐，快速出锅"] },
+  { id:24, name:"土豆炖牛肉", category:"荤菜", cookingTime:"70分钟", difficulty:"中等", description:"牛肉酥烂、土豆绵软、汤汁浓郁，暖身又下饭", image:"", mainIngredients:["牛腩 500g","土豆 2个","胡萝卜 1根","洋葱 半个","姜 5片","八角 2个"], seasonings:["生抽 2勺","老抽 1勺","料酒 2勺","番茄酱 1勺","盐 适量"], steps:["牛腩切3cm块，冷水下锅加姜片料酒焯水3分钟，撇去浮沫捞出","锅中少油，下洋葱块和姜片炒香，放入牛肉翻炒","加料酒生抽老抽番茄酱翻炒上色","倒入足量热水，加八角，大火烧开转小火盖盖炖50分钟","土豆和胡萝卜去皮切滚刀块，放入锅中继续炖15分钟","加盐调味，大火收汁至汤汁浓稠即可"] },
+  { id:25, name:"红烧牛腩", category:"荤菜", cookingTime:"70分钟", difficulty:"中等", description:"牛腩软烂入味、汤汁浓郁醇厚，冬日暖身首选", image:"", mainIngredients:["牛腩 500g","白萝卜 半根","番茄 1个","葱 2根","姜 5片","八角 2个","桂皮 1小块"], seasonings:["生抽 2勺","老抽 1勺","料酒 2勺","冰糖 20g","盐 适量"], steps:["牛腩切块冷水下锅焯水3分钟捞出洗净","锅中少油下冰糖小火炒至琥珀色","放入牛腩翻炒上色，加葱姜八角桂皮炒香","加料酒生抽老抽翻炒，加番茄块炒至出汁","倒入足量热水，大火烧开转小火炖50分钟","加白萝卜块继续炖15分钟，加盐调味后大火收汁"] },
+  { id:26, name:"剁椒鱼头", category:"荤菜", cookingTime:"25分钟", difficulty:"中等", description:"剁椒红亮、鱼肉鲜嫩、香辣过瘾的湘菜头牌", image:"", mainIngredients:["胖头鱼头 1个（约800g）","剁椒 100g","蒜 1整头","姜 1大块","葱 3根"], seasonings:["蒸鱼豉油 2勺","料酒 2勺","盐 少许","食用油 2勺"], steps:["鱼头从中间劈开但不劈断，洗净抹盐和料酒腌制15分钟","姜切片铺盘底，放上鱼头，鱼皮朝上","蒜剁成蒜蓉和剁椒混合，均匀铺在鱼头上","蒸锅水烧开，大火蒸12分钟（鱼眼凸出即熟）","出锅倒掉多余汤汁，淋上蒸鱼豉油","撒上葱花，浇一勺滚烫热油激香"] },
+  { id:27, name:"辣子鸡", category:"荤菜", cookingTime:"25分钟", difficulty:"中等", description:"干香酥脆、麻辣过瘾，在辣椒里找鸡肉的乐趣", image:"", mainIngredients:["鸡腿肉 400g","干辣椒 15个","花椒 1大勺","姜 1小块","蒜 5瓣","花生米 30g"], seasonings:["料酒 1勺","生抽 1勺","淀粉 1勺","盐 适量","白糖 少许","白芝麻 1勺"], steps:["鸡腿去骨切2cm小丁，加料酒生抽盐淀粉抓匀腌20分钟","干辣椒剪段去籽，姜蒜切片","锅中多油六成热，下鸡丁炸至金黄捞出，油温升高复炸至酥脆","留底油小火下花椒干辣椒炒至辣椒呈深红色","加姜蒜片炒香，倒入鸡丁快速翻炒","加少许白糖提鲜，撒白芝麻和花生米翻匀出锅"] },
+  { id:28, name:"葱油鸡", category:"荤菜", cookingTime:"35分钟", difficulty:"简单", description:"皮滑肉嫩、葱香四溢，简单却惊艳的粤式名菜", image:"", mainIngredients:["三黄鸡/鸡腿 2个","小葱 1大把","姜 1大块"], seasonings:["盐 适量","料酒 2勺","蒸鱼豉油 2勺","食用油 3勺"], steps:["鸡腿冷水下锅加姜片料酒，水开煮25分钟，关火再焖5分钟","取出放入冰水中浸泡至完全冷却（皮肉紧致关键）","小葱切细葱花，姜剁成姜蓉","锅中烧3勺油至冒烟，浇在葱花姜蓉上，加蒸鱼豉油和盐拌匀成葱油酱","鸡肉斩块码盘","将葱油酱均匀淋在鸡肉上即可"] },
+  { id:29, name:"鱼香茄子", category:"荤菜", cookingTime:"20分钟", difficulty:"简单", description:"茄子软糯吸味、酸甜微辣，虽然是素名实则有肉", image:"", mainIngredients:["茄子 2根","猪肉末 80g","蒜 3瓣","姜 1小块","葱 1根"], seasonings:["生抽 2勺","醋 1.5勺","白糖 1.5勺","淀粉 1勺","郫县豆瓣酱 1勺","料酒 1勺"], steps:["茄子切成长条，撒盐腌10分钟后挤干水分","调鱼香汁：生抽、醋、白糖、淀粉、3勺水混合搅匀","锅中多油，下茄子条翻炒至变软盛出","锅中留底油，下肉末炒酥，加豆瓣酱炒出红油","加姜蒜末炒香，倒回茄子翻炒","淋入鱼香汁大火翻匀，至汁浓稠撒葱花出锅"] },
+  { id:30, name:"蒜香排骨", category:"荤菜", cookingTime:"40分钟", difficulty:"中等", description:"外酥里嫩、蒜香扑鼻，一口一个停不下来", image:"", mainIngredients:["猪小排 400g","蒜 2整头","青红椒 各半个"], seasonings:["生抽 1勺","料酒 1勺","蚝油 1勺","淀粉 2勺","盐 适量","胡椒粉 少许"], steps:["排骨洗净沥干，加蒜末（1整头）、生抽、料酒、蚝油、盐、胡椒粉抓匀腌30分钟","腌好的排骨加淀粉抓匀挂薄糊","锅中多油五成热，下排骨中小火炸8分钟至熟透捞出","油温升至七成热，复炸至金黄酥脆","另起锅少油，下剩余蒜末炒至金黄，加青红椒丁翻炒","倒入排骨快速翻炒均匀即可"] },
+  { id:31, name:"番茄炒蛋", category:"素菜", cookingTime:"10分钟", difficulty:"简单", description:"国民第一家常菜，酸甜浓郁拌饭无敌", image:"", mainIngredients:["番茄 2个","鸡蛋 3个","葱 1根"], seasonings:["盐 适量","白糖 1小勺","番茄酱 半勺"], steps:["番茄顶部划十字，开水烫一下去皮，切小块","鸡蛋打散加少许盐搅匀","锅中多油大火烧热，倒入蛋液用筷子快速划散，凝固即盛出","留底油下番茄块中火翻炒至出汁变软","加白糖，可选加番茄酱增加浓郁度","倒回鸡蛋翻炒均匀，加盐调味，撒葱花出锅"] },
+  { id:32, name:"酸辣土豆丝", category:"素菜", cookingTime:"10分钟", difficulty:"简单", description:"酸辣脆爽，最考验刀工的家常菜", image:"", mainIngredients:["土豆 2个","干辣椒 5个","花椒 1小撮","蒜 2瓣","葱 1根"], seasonings:["白醋 2勺","盐 适量"], steps:["土豆去皮切细丝，放冷水浸泡10分钟洗去淀粉","换水2-3遍至水清澈，沥干水分","锅中油热，下花椒干辣椒段小火炸出香味","转大火，下土豆丝快速翻炒1-2分钟","沿锅边淋入白醋，加盐调味","翻炒至土豆丝变透明但仍有脆感，撒葱花出锅"] },
+  { id:33, name:"地三鲜", category:"素菜", cookingTime:"20分钟", difficulty:"中等", description:"茄子土豆青椒的黄金组合，咸鲜浓郁下饭神器", image:"", mainIngredients:["茄子 1根","土豆 1个","青椒 2个","蒜 3瓣"], seasonings:["生抽 2勺","蚝油 1勺","白糖 半勺","淀粉 1勺","盐 适量"], steps:["茄子土豆青椒分别切滚刀块","调碗汁：生抽、蚝油、白糖、淀粉、3勺水混合搅匀","锅中多油，分别将土豆炸至金黄、茄子炸软、青椒过油10秒","锅中留底油，下蒜末炒香","倒入所有材料翻炒均匀，淋入碗汁","大火翻炒至汁浓稠裹在菜上即可"] },
+  { id:34, name:"手撕包菜", category:"素菜", cookingTime:"10分钟", difficulty:"简单", description:"酸辣脆爽、锅气十足，饭店点击率最高的素菜", image:"", mainIngredients:["包菜（卷心菜）半颗","干辣椒 6个","花椒 1小撮","蒜 3瓣"], seasonings:["生抽 2勺","醋 1勺","蚝油 1勺","盐 少许","白糖 少许"], steps:["包菜用手撕成小片（不用刀切，口感更好），洗净彻底沥干","干辣椒剪段，蒜切片","锅中油热，下干辣椒段和花椒小火炸香","转大火，放入包菜快速翻炒，保持大火","包菜变软塌下后，沿锅边淋入生抽和醋","加蚝油、白糖和少许盐，大火翻炒均匀立刻出锅"] },
+  { id:35, name:"蚝油生菜", category:"素菜", cookingTime:"5分钟", difficulty:"简单", description:"清爽脆嫩、蚝油提鲜，3分钟搞定的快手素菜", image:"", mainIngredients:["生菜 2颗","蒜 4瓣"], seasonings:["蚝油 2勺","生抽 1勺","淀粉 半勺","白糖 少许"], steps:["生菜掰开洗净，蒜切蒜末","锅中烧水加少许盐和油，水开下生菜烫10秒立即捞出装盘","调酱汁：蚝油、生抽、白糖、淀粉、3勺水搅匀","锅中少油，下蒜末小火炒至金黄","倒入酱汁小火煮至微稠","将酱汁淋在生菜上即可"] },
+  { id:36, name:"蒜蓉西兰花", category:"素菜", cookingTime:"8分钟", difficulty:"简单", description:"翠绿爽脆、蒜香扑鼻，营养美味的健康素菜", image:"", mainIngredients:["西兰花 1颗","蒜 5瓣"], seasonings:["蚝油 1勺","盐 适量","食用油 少许"], steps:["西兰花掰成小朵，放入淡盐水中浸泡10分钟","锅中烧水加少许盐和油，水开下西兰花焯水1分钟，捞出过凉沥干","蒜剁成蒜蓉","锅中少油，小火下一半蒜蓉炒至金黄","下西兰花大火翻炒1分钟，加蚝油和盐调味","撒入剩余生蒜蓉，翻炒均匀即可"] },
+  { id:37, name:"家常豆腐", category:"素菜", cookingTime:"15分钟", difficulty:"简单", description:"豆腐外焦里嫩、酱汁浓郁，不输肉菜的下饭神器", image:"", mainIngredients:["老豆腐 1块","青椒 1个","红椒 半个","木耳 30g","蒜 2瓣"], seasonings:["生抽 2勺","蚝油 1勺","淀粉 1勺","盐 少许"], steps:["豆腐切三角厚片，用厨房纸吸干水分","锅中多油，下豆腐片中小火煎至两面金黄盛出","木耳泡发撕小朵，青红椒切块","锅中留底油，蒜末炒香，加青红椒木耳翻炒","放入豆腐，加生抽蚝油和少许水翻炒均匀","淋入水淀粉勾芡，翻匀出锅"] },
+  { id:38, name:"醋溜白菜", category:"素菜", cookingTime:"10分钟", difficulty:"简单", description:"酸爽开胃、脆嫩多汁，一道白菜也能惊艳餐桌", image:"", mainIngredients:["大白菜 半颗","干辣椒 5个","蒜 3瓣","葱 1根"], seasonings:["醋 2勺","生抽 1勺","淀粉 半勺","盐 适量","白糖 少许"], steps:["白菜帮和叶分开，帮斜刀片成薄片，叶撕小片","调碗芡：醋、生抽、白糖、淀粉、2勺水混合搅匀","锅中多油大火烧热，下干辣椒段和蒜葱爆香","先下白菜帮大火翻炒1分钟至微透明","再下白菜叶翻炒至断生","淋入碗芡大火快速翻匀，汤汁浓稠即出锅"] },
+  { id:39, name:"凉拌黄瓜", category:"素菜", cookingTime:"10分钟", difficulty:"简单", description:"清脆爽口、酸辣开胃，最简单的凉菜也最受欢迎", image:"", mainIngredients:["黄瓜 2根","蒜 3瓣","香菜 少许"], seasonings:["生抽 1勺","醋 2勺","香油 1小勺","辣椒油 1勺","盐 适量","白糖 少许"], steps:["黄瓜洗净用刀拍裂（不要切，拍的更入味），切段","蒜剁蒜末，香菜切段","将黄瓜放入大碗，加盐拌匀腌制5分钟，倒掉腌出的水","加入蒜末、生抽、醋、白糖、辣椒油","充分拌匀，静置5分钟入味","装盘淋香油，撒香菜点缀"] },
+  { id:40, name:"香菇青菜", category:"素菜", cookingTime:"12分钟", difficulty:"简单", description:"香菇肥厚鲜香、青菜碧绿清脆，经典宴席搭配", image:"", mainIngredients:["小青菜/上海青 300g","干香菇 8朵","蒜 3瓣"], seasonings:["蚝油 1.5勺","生抽 1勺","淀粉 半勺","盐 少许"], steps:["干香菇提前2小时温水泡发（泡香菇的水留用）","青菜对半切开，香菇切片","锅中烧水加盐和油，水开焯烫青菜30秒捞出摆盘","锅中少油下蒜末和香菇片翻炒出香味","加蚝油、生抽、少许香菇水和淀粉调成的芡汁","煮至汤汁浓稠淋在青菜上即可"] },
+  { id:41, name:"红烧茄子", category:"素菜", cookingTime:"15分钟", difficulty:"简单", description:"软糯入味、咸甜适中，茄子控的最爱", image:"", mainIngredients:["茄子 2根","蒜 3瓣","葱 1根","青椒 1个"], seasonings:["生抽 2勺","老抽 半勺","蚝油 1勺","白糖 1小勺","淀粉 1勺","盐 少许"], steps:["茄子切滚刀块，撒盐腌10分钟后挤干水分，撒少许淀粉抓匀","调碗汁：生抽、老抽、蚝油、白糖、淀粉、3勺水混合","锅中多油，下茄子翻炒至变软微黄","加入蒜末炒香","淋入碗汁，加青椒块翻炒均匀","中火收至汤汁浓稠，撒葱花出锅"] },
+  { id:42, name:"松仁玉米", category:"素菜", cookingTime:"10分钟", difficulty:"简单", description:"玉米清甜、松仁酥香，色香味俱全的宴客菜", image:"", mainIngredients:["甜玉米粒 300g","松仁 30g","胡萝卜 半根","青豆 50g"], seasonings:["盐 适量","白糖 少许","淀粉 半勺"], steps:["胡萝卜切小丁，和青豆一起焯水1分钟捞出","松仁小火干炒至微黄出香味盛出（极易焦，全程小火）","锅中少油，下玉米粒、胡萝卜丁、青豆翻炒","加盐和少许白糖调味","淋入少许水淀粉勾薄芡","出锅装盘撒上松仁即可"] },
+  { id:43, name:"蒜蓉空心菜", category:"素菜", cookingTime:"5分钟", difficulty:"简单", description:"翠绿脆嫩、蒜香浓郁，夏天最受欢迎的时蔬", image:"", mainIngredients:["空心菜 1把","蒜 5瓣","干辣椒 2个"], seasonings:["盐 适量","鸡精 少许","食用油 2勺"], steps:["空心菜摘成段，梗和叶分开","蒜剁成蒜蓉","锅中油大火烧到冒烟，下蒜蓉和干辣椒爆香","先下空心菜梗大火翻炒30秒","再下叶子继续大火翻炒至断生","加盐和少许鸡精，快速翻匀立刻出锅"] },
+  { id:44, name:"虎皮青椒", category:"素菜", cookingTime:"10分钟", difficulty:"简单", description:"外皮焦香起皱、内里软嫩多汁，简单却上瘾", image:"", mainIngredients:["青椒 6个","蒜 3瓣"], seasonings:["生抽 2勺","醋 1勺","白糖 半勺","盐 适量"], steps:["青椒去蒂去籽，用刀拍扁","调碗汁：生抽、醋、白糖、盐、1勺水混合搅匀","锅中不放油，下青椒中小火干煎，用铲子按压","煎至两面出现虎皮状焦斑盛出","锅中放油，下蒜末炒香，倒入碗汁煮开","放入青椒翻炒裹上酱汁即可"] },
+  { id:45, name:"韭菜炒鸡蛋", category:"素菜", cookingTime:"8分钟", difficulty:"简单", description:"韭菜辛香、鸡蛋嫩滑，简单快手却又香又下饭", image:"", mainIngredients:["韭菜 1把","鸡蛋 3个"], seasonings:["盐 适量","料酒 少许"], steps:["韭菜洗净切3cm段，鸡蛋打散加少许盐和料酒搅匀","锅中多油大火烧热，倒入蛋液用筷子快速划散，凝固盛出","锅中再加少许油大火，下韭菜快速翻炒30秒","韭菜变软出水前立刻倒回鸡蛋","加盐快速翻炒均匀","整个过程保持大火，韭菜断生即出锅"] },
+  { id:46, name:"芹菜炒香干", category:"素菜", cookingTime:"10分钟", difficulty:"简单", description:"芹菜脆爽、香干有嚼劲，清淡又下饭的绝配", image:"", mainIngredients:["芹菜 200g","香干（豆腐干）4块","红椒 半个","蒜 2瓣"], seasonings:["生抽 1.5勺","蚝油 半勺","盐 适量"], steps:["芹菜去筋斜切段，香干切条，红椒切丝","锅中烧水加少许盐和油，水开焯芹菜30秒捞出过凉","锅中油热，下香干条中小火煎至表面微黄","加入蒜末和红椒丝翻炒出香味","加入芹菜段大火翻炒1分钟","加生抽、蚝油和少许盐，快速翻匀出锅"] },
+  { id:47, name:"白灼菜心", category:"素菜", cookingTime:"8分钟", difficulty:"简单", description:"菜心清甜脆嫩、淋上热油豉油，粤式经典素菜", image:"", mainIngredients:["菜心 300g","蒜 3瓣","姜 1小块"], seasonings:["蒸鱼豉油 2勺","食用油 2勺","盐 少许"], steps:["菜心洗净，老根切掉，蒜姜切丝","锅中烧水加少许盐和油，水开下菜心烫1-2分钟至熟","捞出菜心整齐码在盘中","淋上蒸鱼豉油，撒上蒜丝姜丝","小锅烧2勺油至冒烟","将滚油浇在蒜姜丝上，嗞啦一声激发出香味即可"] },
+  { id:48, name:"干锅花菜", category:"素菜", cookingTime:"15分钟", difficulty:"简单", description:"花菜焦香脆嫩、微辣入味，比肉还好吃的素菜", image:"", mainIngredients:["花菜/有机花菜 1颗","五花肉片 50g","干辣椒 5个","蒜 3瓣","青蒜 1根"], seasonings:["生抽 1.5勺","蚝油 1勺","郫县豆瓣酱 半勺","盐 少许"], steps:["花菜掰小朵，淡盐水泡10分钟后沥干","锅中多油六成热，下花菜炸1分钟至边缘微焦捞出","留底油下五花肉片煸出油（纯素可跳过）","加干辣椒段、豆瓣酱、蒜片炒出红油","倒入花菜大火翻炒，加生抽蚝油调味","放入青蒜段翻炒至断生即可出锅"] },
+  { id:49, name:"番茄蛋汤", category:"汤", cookingTime:"10分钟", difficulty:"简单", description:"酸甜开胃、蛋花飘香，最简单也最温暖的家常汤", image:"", mainIngredients:["番茄 2个","鸡蛋 2个","葱 1根","香菜 少许"], seasonings:["盐 适量","香油 少许","白胡椒粉 少许","淀粉水 适量"], steps:["番茄去皮切小块，鸡蛋打散，葱切葱花","锅中少油，下番茄块中火翻炒至出汁软烂","加入足量水大火烧开，煮3分钟让番茄味充分融入汤中","淋入少许淀粉水搅匀","转小火，沿筷子缓缓淋入蛋液，静置5秒再轻轻搅动","加盐和白胡椒粉调味，出锅淋香油撒葱花"] },
+  { id:50, name:"紫菜蛋花汤", category:"汤", cookingTime:"5分钟", difficulty:"简单", description:"3分钟搞定的快手汤，鲜美清爽解油腻", image:"", mainIngredients:["紫菜 1片","鸡蛋 2个","虾皮 1小撮","葱 1根"], seasonings:["盐 适量","香油 少许","白胡椒粉 少许"], steps:["紫菜撕碎放入大汤碗中，加虾皮和葱花","鸡蛋打散搅匀","锅中烧水，水开后加盐调味","转小火，沿筷子缓缓淋入蛋液，形成漂亮蛋花","将滚烫的蛋花汤冲入放了紫菜的碗中","淋香油、撒白胡椒粉，搅一下即可"] },
+  { id:51, name:"酸辣汤", category:"汤", cookingTime:"15分钟", difficulty:"简单", description:"酸辣开胃、暖身发汗，一碗下去全身通透", image:"", mainIngredients:["嫩豆腐 半盒","鸡蛋 1个","木耳 20g","香菇 3朵","火腿肠 半根"], seasonings:["醋 3勺","白胡椒粉 1小勺","生抽 1勺","盐 适量","淀粉水 适量","香油 少许"], steps:["豆腐切细丝，木耳香菇泡发切丝，火腿肠切丝","锅中烧水，水开后加入所有丝料煮2分钟","加生抽、盐、大量白胡椒粉调味","淋入淀粉水搅匀至汤汁微稠","转小火淋入蛋液搅成蛋花","关火后加醋（醋最后放保留酸味），淋香油出锅"] },
+  { id:52, name:"排骨玉米汤", category:"汤", cookingTime:"60分钟", difficulty:"简单", description:"汤清甜滋润、排骨酥烂、玉米吸饱汤汁，老少皆宜", image:"", mainIngredients:["猪排骨 400g","甜玉米 2根","胡萝卜 1根","姜 5片","葱 2根"], seasonings:["盐 适量","料酒 1勺"], steps:["排骨冷水下锅加姜片料酒焯水3分钟，撇去浮沫捞出洗净","玉米切段，胡萝卜切滚刀块","将排骨、玉米、胡萝卜、姜片放入汤锅中","加入足量热水，大火烧开后转小火盖盖炖50分钟","炖至排骨酥烂、汤色奶白","加盐调味，撒葱花出锅"] },
+  { id:53, name:"冬瓜排骨汤", category:"汤", cookingTime:"50分钟", difficulty:"简单", description:"清淡鲜美、消暑解腻，夏日必备滋补汤", image:"", mainIngredients:["猪排骨 350g","冬瓜 500g","姜 5片","枸杞 1小撮"], seasonings:["盐 适量","料酒 1勺"], steps:["排骨焯水洗净，冬瓜去皮去瓤切厚块","排骨和姜片放入锅中加足量热水，大火烧开转小火炖35分钟","加入冬瓜块继续炖15分钟（冬瓜后放不易炖烂）","出锅前2分钟撒入枸杞","加盐调味即可","冬瓜炖到半透明状最佳，汤清味鲜"] },
+  { id:54, name:"菌菇鸡汤", category:"汤", cookingTime:"70分钟", difficulty:"简单", description:"菌菇的鲜加上鸡肉的香，鲜掉眉毛的滋补汤", image:"", mainIngredients:["土鸡/鸡腿 半只","香菇 6朵","蟹味菇 100g","红枣 5颗","姜 5片","枸杞 1小撮"], seasonings:["盐 适量","料酒 2勺"], steps:["鸡肉斩块冷水下锅加姜片料酒焯水3分钟，捞出洗净","干香菇提前泡发对半切，蟹味菇去根洗净","将鸡块、香菇、红枣、姜片放入汤锅，加足量热水","大火烧开撇去浮沫，转小火盖盖炖60分钟","最后10分钟加入蟹味菇和枸杞","加盐调味即可"] },
+  { id:55, name:"鲫鱼豆腐汤", category:"汤", cookingTime:"30分钟", difficulty:"中等", description:"汤色奶白如牛奶、鱼肉鲜嫩豆腐滑口，营养滋补", image:"", mainIngredients:["鲫鱼 1条（约400g）","嫩豆腐 1盒","姜 5片","葱 2根"], seasonings:["盐 适量","料酒 1勺","白胡椒粉 少许"], steps:["鲫鱼处理干净，两面斜划三刀，用厨房纸彻底擦干","锅中油热，撒少许盐防粘，下鱼中小火煎至两面金黄","用铲子把鱼捣碎","加姜片和足量开水（一定要开水，汤才白）","大火滚煮15分钟至汤色奶白，用滤网捞出鱼骨渣","汤回锅，滑入豆腐块煮3分钟，加盐和白胡椒粉调味，撒葱花"] },
+  { id:56, name:"菌菇豆腐汤", category:"汤", cookingTime:"12分钟", difficulty:"简单", description:"菌菇鲜美、豆腐嫩滑，清淡却不失鲜味的素汤", image:"", mainIngredients:["嫩豆腐 1盒","金针菇 1把","香菇 4朵","蟹味菇 100g","鸡蛋 1个","葱 1根"], seasonings:["盐 适量","白胡椒粉 少许","香油 少许","淀粉水 适量"], steps:["豆腐切小块，香菇切片，金针菇去根撕开，蟹味菇去根","锅中少油，下香菇片炒出香味","加入足量水大火烧开","放入所有菌菇和豆腐，煮5分钟","加盐和白胡椒粉调味，淋入少许淀粉水","转小火淋入蛋液搅成蛋花，出锅淋香油撒葱花"] },
+  { id:57, name:"萝卜排骨汤", category:"汤", cookingTime:"50分钟", difficulty:"简单", description:"萝卜清甜化渣、排骨酥烂入味，秋冬滋补首选", image:"", mainIngredients:["猪排骨 400g","白萝卜 1根","姜 5片","枸杞 1小撮","葱 1根"], seasonings:["盐 适量","料酒 1勺","白胡椒粉 少许"], steps:["排骨冷水下锅加姜片料酒焯水3分钟捞出洗净","白萝卜去皮切滚刀块","排骨和姜片放入汤锅加足量热水，大火烧开转小火炖30分钟","放入白萝卜块继续炖20分钟至萝卜透明","出锅前加枸杞、盐和白胡椒粉调味","撒葱花即可"] },
+  { id:58, name:"南瓜汤", category:"汤", cookingTime:"20分钟", difficulty:"简单", description:"香甜丝滑、金黄诱人，暖心暖胃的治愈系汤品", image:"", mainIngredients:["老南瓜 500g","洋葱 半个","黄油 1小块","牛奶 100ml"], seasonings:["盐 少许","黑胡椒 少许"], steps:["南瓜去皮去瓤切小块，洋葱切碎","锅中放黄油小火融化，下洋葱碎炒至透明出香","加入南瓜块翻炒2分钟","加入没过南瓜的水，大火烧开转中小火煮15分钟至南瓜软烂","倒入料理机打成细腻的泥状（或用勺子在锅中压成泥）","倒回锅中加牛奶搅匀，加盐和黑胡椒调味，小火再煮2分钟即可"] },
+  { id:59, name:"山药排骨汤", category:"汤", cookingTime:"50分钟", difficulty:"简单", description:"山药绵密、排骨鲜美，健脾养胃的温和好汤", image:"", mainIngredients:["猪排骨 350g","铁棍山药 300g","胡萝卜 1根","姜 5片","红枣 4颗"], seasonings:["盐 适量","料酒 1勺"], steps:["排骨焯水洗净；山药去皮切段（戴手套防痒）；胡萝卜切滚刀块","排骨、姜片、红枣放入汤锅加足量热水，大火烧开转小火炖30分钟","加入山药段和胡萝卜块继续炖15分钟","山药炖至粉糯筷子能扎透即可","加盐调味出锅","汤色清亮鲜美，山药粉糯绵密"] },
+  { id:60, name:"丝瓜蛋汤", category:"汤", cookingTime:"8分钟", difficulty:"简单", description:"丝瓜清甜嫩滑、蛋花飘逸，夏日最清爽的快手汤", image:"", mainIngredients:["丝瓜 1根","鸡蛋 2个","姜 2片","葱 1根"], seasonings:["盐 适量","香油 少许","白胡椒粉 少许"], steps:["丝瓜去皮切滚刀块（去皮后尽快下锅，否则氧化变黑）","鸡蛋打散搅匀","锅中少油，下姜片爆香，加丝瓜块翻炒1分钟至微微变软","加入足量热水大火烧开，煮2分钟","转小火沿筷子淋入蛋液形成蛋花","加盐和白胡椒粉调味，淋香油撒葱花出锅"] }
+];
+
+// ============ Helpers ============
+function getTodayStr() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+function formatDateCN(dateStr) {
+  var parts = dateStr.split('-');
+  var y = +parts[0], m = +parts[1], d = +parts[2];
+  var w = ['日','一','二','三','四','五','六'][new Date(y, m-1, d).getDay()];
+  return y + '年' + m + '月' + d + '日 星期' + w;
+}
+function getMonthDays(year, month) {
+  return new Date(year, month+1, 0).getDate();
+}
+
+// ============ localStorage ============
+var STORAGE_KEY = 'daily_recipes_data';
+function loadData() {
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : { history:{}, theme:'default', viewedDate:null };
+  } catch(e) { return { history:{}, theme:'default', viewedDate:null }; }
+}
+function saveData(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+
+// ============ Recipe Selection ============
+function selectRecipesForDate(dateStr, data) {
+  if (data.history[dateStr]) return data.history[dateStr];
+  var usedIds = new Set();
+  Object.values(data.history).forEach(function(ids) { ids.forEach(function(id) { usedIds.add(id); }); });
+  var available = RECIPES.filter(function(r) { return !usedIds.has(r.id); });
+  var pool;
+  if (available.length < 6) {
+    var recentIds = new Set();
+    var dates = Object.keys(data.history).sort().slice(-7);
+    dates.forEach(function(d) { data.history[d].forEach(function(id) { recentIds.add(id); }); });
+    pool = RECIPES.filter(function(r) { return !recentIds.has(r.id); });
+    if (pool.length < 6) pool = RECIPES.slice();
+  } else {
+    pool = available;
+  }
+
+  function seededRandom(seed) {
+    var s = 0;
+    for (var i=0; i<seed.length; i++) s = ((s<<5)-s+seed.charCodeAt(i))|0;
+    return function() { s=(s*1103515245+12345)&0x7fffffff; return s/0x7fffffff; };
+  }
+  var rng = seededRandom(dateStr);
+  function shuffle(arr) {
+    var a = arr.slice();
+    for (var i=a.length-1; i>0; i--) { var j=Math.floor(rng()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+    return a;
+  }
+
+  var meat = shuffle(pool.filter(function(r) { return r.category==='荤菜'; }));
+  var veg = shuffle(pool.filter(function(r) { return r.category==='素菜'; }));
+  var soup = shuffle(pool.filter(function(r) { return r.category==='汤'; }));
+  var selected = meat.slice(0,3).concat(veg.slice(0,2)).concat(soup.slice(0,1));
+
+  if (selected.length < 6) {
+    var selIds = new Set(selected.map(function(r) { return r.id; }));
+    var remaining = shuffle(pool.filter(function(r) { return !selIds.has(r.id); }));
+    while (selected.length < 6 && remaining.length > 0) selected.push(remaining.shift());
+  }
+  var recipeIds = selected.map(function(r) { return r.id; });
+  data.history[dateStr] = recipeIds;
+  saveData(data);
+  return recipeIds;
+}
+
+// ============ Emoji Icons ============
+function getRecipeIcon(r) {
+  var n = r.name;
+  if (n.indexOf('鸡')!==-1 || n.indexOf('翅')!==-1) return '🍗';
+  if (n.indexOf('鱼')!==-1 || n.indexOf('鲈')!==-1) return '🐟';
+  if (n.indexOf('虾')!==-1) return '🦐';
+  if (n.indexOf('牛')!==-1) return '🥩';
+  if (n.indexOf('羊')!==-1) return '🍖';
+  if (n.indexOf('鸭')!==-1) return '🦆';
+  if (n.indexOf('排骨')!==-1 || n.indexOf('骨')!==-1) return '🍖';
+  if (n.indexOf('肉')!==-1 || n.indexOf('猪')!==-1 || n.indexOf('宫保')!==-1 || n.indexOf('回锅')!==-1 || n.indexOf('鱼香')!==-1 || n.indexOf('锅包')!==-1 || n.indexOf('京酱')!==-1 || n.indexOf('水煮')!==-1 || n.indexOf('蒜香')!==-1 || n.indexOf('孜然')!==-1) return '🥘';
+  if (n.indexOf('豆腐')!==-1 && r.category==='荤菜') return '🧈';
+  if (n.indexOf('四季豆')!==-1) return '🫛';
+  if (n.indexOf('蛋')!==-1) return '🍳';
+  if (n.indexOf('豆腐')!==-1) return '🧈';
+  if (n.indexOf('茄')!==-1) return '🍆';
+  if (n.indexOf('土豆')!==-1) return '🥔';
+  if (n.indexOf('玉米')!==-1) return '🌽';
+  if (n.indexOf('西兰花')!==-1 || n.indexOf('青菜')!==-1 || n.indexOf('菜心')!==-1 || n.indexOf('生菜')!==-1 || n.indexOf('包菜')!==-1 || n.indexOf('白菜')!==-1 || n.indexOf('空心菜')!==-1 || n.indexOf('菜')!==-1 || n.indexOf('芹')!==-1) return '🥬';
+  if (n.indexOf('黄瓜')!==-1 || n.indexOf('丝瓜')!==-1 || n.indexOf('冬瓜')!==-1 || n.indexOf('南瓜')!==-1 || n.indexOf('苦瓜')!==-1) return '🥒';
+  if (n.indexOf('菇')!==-1 || n.indexOf('菌')!==-1) return '🍄';
+  if (n.indexOf('辣椒')!==-1 || n.indexOf('青椒')!==-1 || n.indexOf('辣')!==-1) return '🌶️';
+  if (n.indexOf('花菜')!==-1) return '🥦';
+  if (n.indexOf('萝卜')!==-1) return '🥕';
+  if (n.indexOf('山药')!==-1) return '🥔';
+  if (n.indexOf('汤')!==-1 && r.category==='汤') return '🍲';
+  if (r.category==='荤菜') return '🍖';
+  if (r.category==='素菜') return '🥬';
+  return '🍲';
+}
+
+// ============ Render ============
+function renderRecipes(recipeIds, targetDateStr) {
+  var grid = document.getElementById('recipeGrid');
+  var heading = document.getElementById('dateHeading');
+  var subtitle = document.getElementById('dailySubtitle');
+  var dateBadge = document.getElementById('dateBadge');
+  var isToday = targetDateStr === getTodayStr();
+  heading.textContent = isToday ? '今日推荐 · 5菜1汤' : formatDateCN(targetDateStr);
+  subtitle.textContent = isToday ? '每天新鲜搭配，好好吃饭' : '历史食谱回顾';
+  dateBadge.textContent = formatDateCN(targetDateStr);
+
+  var recipes = recipeIds.map(function(id) { return RECIPES.find(function(r) { return r.id===id; }); }).filter(Boolean);
+  if (recipes.length===0) {
+    grid.innerHTML = '<p style="text-align:center;grid-column:1/-1;color:var(--text-light);padding:40px;">暂无食谱数据</p>';
+    return;
+  }
+  var catClass = { '荤菜':'cat-meat', '素菜':'cat-veg', '汤':'cat-soup' };
+
+  grid.innerHTML = recipes.map(function(r, idx) {
+    return '<div class="recipe-card ' + (r.category==='汤'?'soup-card':'') + '" data-recipe-id="' + r.id + '" data-idx="' + idx + '">'
+      + '<div class="card-img-wrap">'
+      + '<span class="card-icon">' + getRecipeIcon(r) + '</span>'
+      + '<span class="card-category ' + (catClass[r.category]||'') + '">' + r.category + '</span>'
+      + '</div>'
+      + '<div class="card-body">'
+      + '<div class="card-name">' + r.name + '</div>'
+      + '<div class="card-desc">' + r.description + '</div>'
+      + '<div class="card-meta"><span>⏱ ' + r.cookingTime + '</span><span>📊 ' + r.difficulty + '</span></div>'
+      + '<div class="card-expand">'
+      + '<h4>主料</h4><ul>' + r.mainIngredients.map(function(i) { return '<li>' + i + '</li>'; }).join('') + '</ul>'
+      + '<h4>调料</h4><ul>' + r.seasonings.map(function(i) { return '<li>' + i + '</li>'; }).join('') + '</ul>'
+      + '<h4>做法</h4><ol>' + r.steps.map(function(s) { return '<li>' + s + '</li>'; }).join('') + '</ol>'
+      + '</div>'
+      + '<div class="card-toggle" onclick="toggleCard(this)">展开查看详情 ▾</div>'
+      + '</div>'
+      + '</div>';
+  }).join('');
+
+  grid.querySelectorAll('.recipe-card').forEach(function(card) {
+    card.addEventListener('click', function(e) {
+      if (e.target.closest('.card-toggle')) return;
+      var toggle = this.querySelector('.card-toggle');
+      if (toggle) toggleCard(toggle);
+    });
+  });
+}
+
+function toggleCard(el) {
+  var card = el.closest('.recipe-card');
+  card.classList.toggle('expanded');
+  el.textContent = card.classList.contains('expanded') ? '收起详情 ▴' : '展开查看详情 ▾';
+}
+
+function updateButtonVisibility(displayDate) {
+  var isToday = displayDate === getTodayStr();
+  document.getElementById('todayBtn').style.display = isToday ? 'none' : 'inline-block';
+  document.getElementById('refreshBtn').style.display = isToday ? 'inline-block' : 'none';
+}
+
+// ============ Theme ============
+function applyTheme(theme) {
+  if (theme==='default') document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme', theme);
+  document.querySelectorAll('.theme-dot').forEach(function(d) {
+    d.classList.toggle('active', d.dataset.theme===theme);
+  });
+  var data = loadData(); data.theme = theme; saveData(data);
+  if (currentRoom) syncRoomData();
+}
+
+// ============ Calendar ============
+var calYear, calMonth, calSelectedDate;
+function openCalendar() {
+  var today = new Date();
+  calYear = today.getFullYear(); calMonth = today.getMonth(); calSelectedDate = getTodayStr();
+  document.getElementById('calOverlay').classList.add('active');
+  renderCalendar();
+}
+function closeCalendar() { document.getElementById('calOverlay').classList.remove('active'); }
+
+function renderCalendar() {
+  document.getElementById('calMonthLabel').textContent = calYear + '年 ' + (calMonth+1) + '月';
+  var now = new Date();
+  document.getElementById('calNext').disabled = (calYear===now.getFullYear() && calMonth>=now.getMonth());
+
+  var grid = document.getElementById('calGrid');
+  var todayStr = getTodayStr();
+  var data = loadData();
+  var html = ['日','一','二','三','四','五','六'].map(function(h) { return '<div class="cal-day-header">' + h + '</div>'; }).join('');
+  var firstDay = new Date(calYear, calMonth, 1).getDay();
+  var daysInMonth = getMonthDays(calYear, calMonth);
+  var prevDays = getMonthDays(calYear, calMonth-1);
+
+  for (var i=firstDay-1; i>=0; i--) html += '<div class="cal-day other-month">' + (prevDays-i) + '</div>';
+  for (var d=1; d<=daysInMonth; d++) {
+    var ds = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    var cls = 'cal-day';
+    if (ds===todayStr) cls += ' today';
+    if (data.history[ds]) cls += ' has-recipe';
+    if (ds>todayStr) cls += ' future';
+    if (ds===calSelectedDate) cls += ' selected';
+    html += '<div class="' + cls + '" data-date="' + ds + '" onclick="onCalDayClick(\'' + ds + '\',this)">' + d + '</div>';
+  }
+  var remaining = 42 - (firstDay + daysInMonth);
+  for (var d2=1; d2<=remaining; d2++) html += '<div class="cal-day other-month">' + d2 + '</div>';
+  grid.innerHTML = html;
+}
+
+function onCalDayClick(dateStr, el) {
+  if (el && (el.classList.contains('future')||el.classList.contains('other-month'))) return;
+  calSelectedDate = dateStr;
+  document.querySelectorAll('.cal-day').forEach(function(d) { d.classList.remove('selected'); });
+  if (el) el.classList.add('selected');
+  var data = loadData();
+  var recipeIds = data.history[dateStr];
+  var div = document.getElementById('calRecipes');
+  if (!recipeIds||recipeIds.length===0) {
+    div.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:20px 0;">' + (dateStr===getTodayStr()?'今天还没有生成食谱，请回到首页查看':'该日期暂无食谱记录') + '</p>';
+    return;
+  }
+  var recipes = recipeIds.map(function(id) { return RECIPES.find(function(r) { return r.id===id; }); }).filter(Boolean);
+  var badgeMap = {'荤菜':'cat-meat','素菜':'cat-veg','汤':'cat-soup'};
+  div.innerHTML = '<h4>' + formatDateCN(dateStr) + ' 的食谱</h4>'
+    + recipes.map(function(r) { return '<div class="cal-recipe-item" onclick="viewHistoricalRecipe(\'' + dateStr + '\')"><span class="cal-recipe-badge ' + (badgeMap[r.category]||'') + '">' + r.category + '</span><span class="cal-recipe-name">' + r.name + '</span><span style="margin-left:auto;font-size:12px;color:var(--text-light);">' + r.cookingTime + '</span></div>'; }).join('')
+    + '<p style="text-align:center;margin-top:12px;font-size:13px;color:var(--text-light);">点击食谱可回到首页查看完整详情</p>';
+}
+
+function viewHistoricalRecipe(dateStr) {
+  var data = loadData();
+  var recipeIds = data.history[dateStr];
+  if (!recipeIds) return;
+  data.viewedDate = dateStr; saveData(data);
+  closeCalendar();
+  renderRecipes(recipeIds, dateStr);
+  updateButtonVisibility(dateStr);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ============ Refresh & Navigation ============
+function refreshToday() {
+  var data = loadData();
+  var todayStr = getTodayStr();
+  delete data.history[todayStr];
+  data.viewedDate = null;
+  saveData(data);
+  var recipeIds = selectRecipesForDate(todayStr, data);
+  renderRecipes(recipeIds, todayStr);
+  document.getElementById('todayBtn').style.display = 'none';
+  document.getElementById('refreshBtn').style.display = 'inline-block';
+  window.scrollTo({top:0,behavior:'smooth'});
+  if (currentRoom) syncRoomData();
+}
+
+function goToToday() {
+  var data = loadData();
+  data.viewedDate = null; saveData(data);
+  var todayStr = getTodayStr();
+  var recipeIds = selectRecipesForDate(todayStr, data);
+  renderRecipes(recipeIds, todayStr);
+  document.getElementById('todayBtn').style.display = 'none';
+  document.getElementById('refreshBtn').style.display = 'inline-block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ============ Room Functions ============
+async function createRoom() {
+  var code = generateRoomCode();
+  var data = loadData();
+  var todayStr = getTodayStr();
+  var recipeIds = data.history[todayStr] || selectRecipesForDate(todayStr, data);
+
+  var _body = {
+    code: code,
+    theme: data.theme || 'default',
+    recipe_ids: recipeIds,
+    recipe_date: todayStr,
+    updated_at: new Date().toISOString()
+  };
+
+  _lastSyncTime = Date.now();
+  try {
+    await apiPost(_body);
+  } catch(e) {
+    if (e.message && e.message.indexOf('409') !== -1) {
+      return createRoom();
+    }
+    showToast('创建房间失败: ' + (e.message || '未知错误'));
+    console.error('createRoom error:', e);
+    return;
+  }
+
+  currentRoom = { code: code };
+  updateRoomUI();
+
+  var url = new URL(window.location.href);
+  url.searchParams.set('room', code);
+  window.history.replaceState({}, '', url.toString());
+
+  startPolling(code);
+  showToast('房间创建成功！链接已复制，发给朋友一起看吧');
+
+  try { await navigator.clipboard.writeText(getShareUrl(code)); } catch(e) {}
+}
+
+async function joinRoom(code) {
+  var rows;
+  try {
+    rows = await apiGet('?code=eq.' + encodeURIComponent(code.toUpperCase()));
+  } catch(e) {
+    showToast('加入房间失败: ' + (e.message || '未知错误'));
+    console.error('joinRoom error:', e);
+    return false;
+  }
+
+  if (!rows || rows.length === 0) {
+    showToast('房间不存在或已过期');
+    var url = new URL(window.location.href);
+    url.searchParams.delete('room');
+    window.history.replaceState({}, '', url.toString());
+    return false;
+  }
+
+  var roomData = rows[0];
+  currentRoom = { code: code.toUpperCase() };
+  updateRoomUI();
+
+  if (roomData.theme) applyTheme(roomData.theme);
+
+  if (roomData.recipe_ids && roomData.recipe_ids.length > 0) {
+    var localData = loadData();
+    var roomDate = roomData.recipe_date || getTodayStr();
+    localData.history[roomDate] = roomData.recipe_ids;
+    localData.viewedDate = null;
+    saveData(localData);
+    renderRecipes(roomData.recipe_ids, roomDate);
+    document.getElementById('todayBtn').style.display = 'none';
+    document.getElementById('refreshBtn').style.display = 'inline-block';
+  }
+
+  startPolling(code.toUpperCase());
+  showToast('已加入共享房间 ' + code.toUpperCase());
+  return true;
+}
+
+function startPolling(code) {
+  stopPolling();
+  _pollTimer = setInterval(function() {
+    if (Date.now() - _lastSyncTime < 800) return;
+    apiGet('?code=eq.' + encodeURIComponent(code)).then(function(rows) {
+      if (!rows || rows.length === 0) return;
+      var d = rows[0];
+      var localData = loadData();
+      var todayStr = getTodayStr();
+      var currentTheme = localData.theme || 'default';
+      var currentIds = localData.history[todayStr] || [];
+
+      var idsChanged = !arraysEqual(d.recipe_ids || [], currentIds);
+      var themeChanged = d.theme !== currentTheme;
+
+      if (!idsChanged && !themeChanged) return;
+
+      _lastSyncTime = Date.now();
+
+      if (themeChanged && d.theme) {
+        if (d.theme === 'default') document.documentElement.removeAttribute('data-theme');
+        else document.documentElement.setAttribute('data-theme', d.theme);
+        document.querySelectorAll('.theme-dot').forEach(function(dot) {
+          dot.classList.toggle('active', dot.dataset.theme===d.theme);
+        });
+        localData.theme = d.theme;
+      }
+
+      if (idsChanged && d.recipe_ids && d.recipe_ids.length > 0) {
+        var dateStr = d.recipe_date || todayStr;
+        localData.history[dateStr] = d.recipe_ids;
+        if (!localData.viewedDate || localData.viewedDate === todayStr) {
+          renderRecipes(d.recipe_ids, dateStr);
+          document.getElementById('todayBtn').style.display = 'none';
+          document.getElementById('refreshBtn').style.display = 'inline-block';
+        }
+      }
+
+      saveData(localData);
+    }).catch(function(e) {
+      console.warn('轮询失败:', e);
+    });
+  }, 2500);
+}
+
+function stopPolling() {
+  if (_pollTimer) { clearInterval(_pollTimer); _pollTimer = null; }
+}
+
+function arraysEqual(a, b) {
+  if (!a || !b) return a === b;
+  if (a.length !== b.length) return false;
+  for (var i = 0; i < a.length; i++) { if (a[i] !== b[i]) return false; }
+  return true;
+}
+
+async function syncRoomData() {
+  if (!currentRoom) return;
+  var data = loadData();
+  var todayStr = getTodayStr();
+  var recipeIds = data.history[todayStr] || [];
+  _lastSyncTime = Date.now();
+  try {
+    await apiPatch(currentRoom.code, {
+      theme: data.theme || 'default',
+      recipe_ids: recipeIds,
+      recipe_date: todayStr,
+      updated_at: new Date().toISOString()
+    });
+  } catch(e) {
+    console.warn('同步失败:', e);
+  }
+}
+
+function leaveRoom() {
+  stopPolling();
+  currentRoom = null;
+  updateRoomUI();
+
+  var url = new URL(window.location.href);
+  url.searchParams.delete('room');
+  window.history.replaceState({}, '', url.toString());
+
+  var data = loadData();
+  data.viewedDate = null;
+  saveData(data);
+  var todayStr = getTodayStr();
+  var recipeIds = selectRecipesForDate(todayStr, data);
+  renderRecipes(recipeIds, todayStr);
+  document.getElementById('todayBtn').style.display = 'none';
+  document.getElementById('refreshBtn').style.display = 'inline-block';
+
+  showToast('已退出共享房间');
+}
+
+async function copyShareLink() {
+  if (!currentRoom) return;
+  try {
+    await navigator.clipboard.writeText(getShareUrl(currentRoom.code));
+    showToast('链接已复制，发给朋友一起看吧！');
+  } catch(e) {
+    var input = document.createElement('input');
+    input.value = getShareUrl(currentRoom.code);
+    document.body.appendChild(input);
+    input.select();
+    document.execCommand('copy');
+    document.body.removeChild(input);
+    showToast('链接已复制！');
+  }
+}
+
+function promptJoinRoom() {
+  var code = prompt('请输入房间码（6位字母数字）：');
+  if (!code) return;
+  code = code.trim().toUpperCase();
+  if (code.length !== 6) { showToast('房间码格式不正确，应为6位字母数字'); return; }
+  joinRoom(code);
+}
+
+// ============ Init ============
+async function init() {
+  var data = loadData();
+  var todayStr = getTodayStr();
+  applyTheme(data.theme);
+
+  var urlParams = new URLSearchParams(window.location.search);
+  var roomCode = urlParams.get('room');
+
+  var displayDate = todayStr;
+  if (data.viewedDate && data.viewedDate !== todayStr) {
+    displayDate = data.viewedDate;
+  }
+
+  // Always render local data first for fast display
+  var recipeIds = selectRecipesForDate(displayDate, data);
+  renderRecipes(recipeIds, displayDate);
+  updateButtonVisibility(displayDate);
+
+  // Bind events
+  document.querySelectorAll('.theme-dot').forEach(function(dot) {
+    dot.addEventListener('click', function() { applyTheme(this.dataset.theme); });
+  });
+  document.getElementById('calBtn').addEventListener('click', openCalendar);
+  document.getElementById('calClose').addEventListener('click', closeCalendar);
+  document.getElementById('calOverlay').addEventListener('click', function(e) { if(e.target===this) closeCalendar(); });
+  document.getElementById('calPrev').addEventListener('click', function() { calMonth--; if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); });
+  document.getElementById('calNext').addEventListener('click', function() {
+    var now = new Date();
+    if (calYear===now.getFullYear() && calMonth>=now.getMonth()) return;
+    calMonth++; if(calMonth>11){calMonth=0;calYear++;} renderCalendar();
+  });
+  document.getElementById('todayBtn').addEventListener('click', goToToday);
+  document.getElementById('refreshBtn').addEventListener('click', refreshToday);
+  document.getElementById('roomCreateBtn').addEventListener('click', createRoom);
+  document.getElementById('roomJoinBtn').addEventListener('click', promptJoinRoom);
+  document.getElementById('shareBtn').addEventListener('click', copyShareLink);
+  document.getElementById('leaveBtn').addEventListener('click', leaveRoom);
+  document.addEventListener('keydown', function(e) { if(e.key==='Escape') closeCalendar(); });
+
+  // If URL has room code, join the room (will override display if successful)
+  if (roomCode) {
+    var joined = await joinRoom(roomCode.trim().toUpperCase());
+    if (!joined) {
+      updateButtonVisibility(displayDate);
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() { init(); });
+</script>
+</body>
+</html>
