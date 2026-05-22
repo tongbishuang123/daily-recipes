@@ -102,7 +102,8 @@ main { max-width:1200px; margin:0 auto; padding:24px; }
   box-shadow:var(--shadow); transition:box-shadow var(--transition),transform var(--transition),background var(--transition);
   cursor:pointer; display:flex; flex-direction:column; position:relative;
 }
-.recipe-card.expanded { overflow:visible; z-index:10; }
+.recipe-card { z-index:1; }
+.recipe-card.expanded { overflow:visible; }
 .recipe-card:hover { box-shadow:var(--shadow-hover); transform:translateY(-3px); }
 .card-img-wrap {
   position:relative; width:100%; padding-top:56%;
@@ -134,10 +135,10 @@ main { max-width:1200px; margin:0 auto; padding:24px; }
 .card-meta { display:flex; gap:16px; font-size:12px; color:var(--text-light); }
 .card-expand { display:none; }
 .recipe-card.expanded .card-expand {
-  display:block; position:absolute; top:100%; left:0; right:0;
-  background:var(--card-bg); border-radius:0 0 var(--radius) var(--radius);
-  box-shadow:0 10px 25px rgba(0,0,0,0.15); max-height:360px; overflow-y:auto;
-  padding:16px 18px; z-index:10; border-top:1px solid var(--border);
+  display:block; background:var(--card-bg);
+  max-height:360px; overflow-y:auto;
+  padding:16px 18px; border-top:1px solid var(--border);
+  box-shadow:inset 0 4px 8px rgba(0,0,0,0.04);
 }
 .card-expand h4 { font-size:13px; color:var(--primary); margin:10px 0 4px; transition:color var(--transition); }
 .card-expand h4:first-child { margin-top:0; }
@@ -586,7 +587,11 @@ function renderRecipes(recipeIds, targetDateStr) {
 function toggleCard(el) {
   var card = el.closest('.recipe-card');
   card.classList.toggle('expanded');
-  el.textContent = card.classList.contains('expanded') ? '收起详情 ▴' : '展开查看详情 ▾';
+  var expanded = card.classList.contains('expanded');
+  el.textContent = expanded ? '收起详情 ▴' : '展开查看详情 ▾';
+  if (expanded) {
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 function updateButtonVisibility(displayDate) {
