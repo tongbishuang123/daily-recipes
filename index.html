@@ -789,7 +789,6 @@ function clearSearchHistory() {
 function performSearch(query) {
   if (!query||query.trim().length===0) { closeSearch(); return; }
   var q = query.trim().toLowerCase();
-  saveSearchHistory(query.trim());
   var results = RECIPES.filter(function(r) {
     if (r.name.toLowerCase().indexOf(q)!==-1) return true;
     if (r.description.toLowerCase().indexOf(q)!==-1) return true;
@@ -832,7 +831,7 @@ function showSearchPanel(results, query) {
     item.addEventListener('click', function() {
       var id = parseInt(this.dataset.id);
       var recipe = RECIPES.find(function(r) { return r.id===id; });
-      if (recipe) showRecipeDetail(recipe);
+      if (recipe) { saveSearchHistory(recipe.name); showRecipeDetail(recipe); }
     });
   });
 }
