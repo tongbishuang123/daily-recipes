@@ -250,6 +250,17 @@ footer { text-align:center; padding:32px 24px; color:var(--text-light); font-siz
 }
 .search-input:focus { width:200px; border-color:var(--primary); }
 .search-input::placeholder { color:var(--text-light); }
+.search-history { display:none; position:absolute; top:100%; left:0; right:0; margin-top:4px; background:var(--card-bg); border-radius:var(--radius); box-shadow:0 8px 24px rgba(0,0,0,0.15); z-index:200; overflow:hidden; }
+.search-history.show { display:block; }
+.search-history-header { display:flex; justify-content:space-between; align-items:center; padding:10px 14px; border-bottom:1px solid var(--border); }
+.search-history-header span { font-size:12px; color:var(--text-light); }
+.search-history-header button { border:none; background:none; font-size:12px; color:var(--primary); cursor:pointer; }
+.search-history-header button:hover { opacity:0.7; }
+.search-history-item { display:flex; align-items:center; gap:8px; padding:10px 14px; cursor:pointer; font-size:14px; color:var(--text); border-bottom:1px solid var(--border); transition:background var(--transition); }
+.search-history-item:last-child { border-bottom:none; }
+.search-history-item:hover { background:var(--primary-light); }
+.search-history-item .shi-icon { font-size:12px; color:var(--text-light); flex-shrink:0; }
+.search-history-item .shi-time { font-size:11px; color:var(--text-light); margin-left:auto; flex-shrink:0; }
 .search-overlay {
   display:none; position:fixed; top:0; left:0; right:0; bottom:0;
   background:var(--modal-overlay); z-index:150; justify-content:center; align-items:flex-start;
@@ -321,6 +332,7 @@ footer { text-align:center; padding:32px 24px; color:var(--text-light); font-siz
       </div>
       <div class="search-wrap">
         <input class="search-input" id="searchInput" placeholder="搜索菜谱..." autocomplete="off">
+        <div class="search-history" id="searchHistory"></div>
         <span class="search-icon">🔍</span>
       </div>
       <button class="refresh-btn" id="refreshBtn" title="刷新今日菜谱">🔄 换一换</button>
@@ -723,9 +735,61 @@ function goToToday() {
 
 // ============ Search ============
 var searchTimer = null;
+var searchHistoryHideTimer = null;
+
+function loadSearchHistory() {
+  try {
+    var raw = localStorage.getItem('recipeSearchHistory');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function saveSearchHistory(query) {
+  var history = loadSearchHistory();
+  history = history.filter(function(h) { return h.query !== query; });
+  history.unshift({ query: query, time: Date.now() });
+  if (history.length > 5) history = history.slice(0, 5);
+  try { localStorage.setItem('recipeSearchHistory', JSON.stringify(history)); } catch(e) {}
+}
+
+function showSearchHistory() {
+  var history = loadSearchHistory();
+  var el = document.getElementById('searchHistory');
+  if (!history.length) { el.classList.remove('show'); return; }
+  var now = Date.now();
+  el.innerHTML = '<div class="search-history-header"><span>最近搜索</span><button onclick="clearSearchHistory()">清除记录</button></div>'
+    + history.map(function(h) {
+        var diff = now - h.time;
+        var timeStr = diff < 60000 ? '刚刚' : diff < 3600000 ? Math.floor(diff/60000) + '分钟前'
+          : diff < 86400000 ? Math.floor(diff/3600000) + '小时前' : Math.floor(diff/86400000) + '天前';
+        return '<div class="search-history-item" data-query="' + escHtml(h.query) + '"><span class="shi-icon">🕐</span>' + escHtml(h.query) + '<span class="shi-time">' + timeStr + '</span></div>';
+      }).join('');
+  el.querySelectorAll('.search-history-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      var q = this.getAttribute('data-query');
+      document.getElementById('searchInput').value = q;
+      el.classList.remove('show');
+      performSearch(q);
+    });
+  });
+  el.classList.add('show');
+}
+
+function hideSearchHistory() {
+  searchHistoryHideTimer = setTimeout(function() {
+    document.getElementById('searchHistory').classList.remove('show');
+  }, 200);
+}
+
+function clearSearchHistory() {
+  try { localStorage.removeItem('recipeSearchHistory'); } catch(e) {}
+  document.getElementById('searchHistory').classList.remove('show');
+}
+
 function performSearch(query) {
   if (!query||query.trim().length===0) { closeSearch(); return; }
   var q = query.trim().toLowerCase();
+  saveSearchHistory(query.trim());
   var results = RECIPES.filter(function(r) {
     if (r.name.toLowerCase().indexOf(q)!==-1) return true;
     if (r.description.toLowerCase().indexOf(q)!==-1) return true;
@@ -855,7 +919,16 @@ function init() {
     searchTimer = setTimeout(function() { performSearch(this.value); }.bind(this), 250);
   });
   document.getElementById('searchInput').addEventListener('focus', function() {
-    if (this.value.trim()) performSearch(this.value);
+    clearTimeout(searchHistoryHideTimer);
+    if (this.value.trim()) { performSearch(this.value); }
+    else { showSearchHistory(); }
+  });
+  document.getElementById('searchInput').addEventListener('blur', function() {
+    hideSearchHistory();
+  });
+  document.getElementById('searchInput').addEventListener('click', function() {
+    clearTimeout(searchHistoryHideTimer);
+    if (!this.value.trim()) showSearchHistory();
   });
   document.getElementById('searchOverlay').addEventListener('click', function(e) {
     if (e.target===this) closeSearch();
