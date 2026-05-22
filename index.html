@@ -230,6 +230,68 @@ footer { text-align:center; padding:32px 24px; color:var(--text-light); font-siz
   .date-heading { font-size:18px; }
   .card-name { font-size:16px; }
 }
+/* search */
+.search-wrap { position:relative; display:flex; align-items:center; }
+.search-icon { position:absolute; left:10px; font-size:14px; pointer-events:none; }
+.search-input {
+  width:150px; padding:7px 12px 7px 30px; border:1.5px solid var(--border);
+  border-radius:20px; font-size:13px; outline:none; background:var(--card-bg); color:var(--text);
+  transition:all var(--transition);
+}
+.search-input:focus { width:200px; border-color:var(--primary); }
+.search-input::placeholder { color:var(--text-light); }
+.search-overlay {
+  display:none; position:fixed; top:0; left:0; right:0; bottom:0;
+  background:var(--modal-overlay); z-index:150; justify-content:center; align-items:flex-start;
+  padding:100px 20px 20px; overflow-y:auto;
+}
+.search-overlay.active { display:flex; }
+.search-panel {
+  background:var(--card-bg); border-radius:var(--radius); max-width:700px; width:100%;
+  box-shadow:0 20px 60px rgba(0,0,0,0.2); transition:background var(--transition);
+  overflow:hidden;
+}
+.search-result-item {
+  display:flex; align-items:center; gap:12px; padding:14px 20px;
+  cursor:pointer; transition:background var(--transition); border-bottom:1px solid var(--border);
+}
+.search-result-item:last-child { border-bottom:none; }
+.search-result-item:hover { background:var(--primary-light); }
+.search-result-item .sri-icon { font-size:32px; width:44px; text-align:center; flex-shrink:0; }
+.search-result-item .sri-info { flex:1; min-width:0; }
+.search-result-item .sri-name { font-size:16px; font-weight:600; color:var(--text); }
+.search-result-item .sri-desc { font-size:12px; color:var(--text-secondary); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.search-result-item .sri-meta { display:flex; gap:10px; font-size:12px; color:var(--text-light); margin-top:4px; }
+.search-panel-header {
+  padding:16px 20px; border-bottom:1px solid var(--border); display:flex;
+  justify-content:space-between; align-items:center;
+  transition:border-color var(--transition);
+}
+.search-panel-header h3 { font-size:16px; color:var(--text); }
+.search-panel-close {
+  width:28px; height:28px; border:none; background:var(--border); border-radius:50%;
+  cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center;
+  color:var(--text-secondary);
+}
+.search-panel-close:hover { background:#ddd; }
+.search-empty { text-align:center; padding:40px 20px; color:var(--text-light); font-size:14px; }
+.search-detail {
+  padding:20px 24px;
+}
+.search-detail .sd-back {
+  display:inline-block; margin-bottom:12px; color:var(--primary); cursor:pointer; font-size:13px;
+}
+.search-detail .sd-back:hover { opacity:0.7; }
+.search-detail .sd-name { font-size:20px; font-weight:600; color:var(--text); margin-bottom:4px; }
+.search-detail .sd-desc { font-size:14px; color:var(--text-secondary); margin-bottom:12px; }
+.search-detail .sd-meta { display:flex; gap:16px; font-size:13px; color:var(--text-light); margin-bottom:16px; }
+.search-detail h4 { font-size:14px; color:var(--primary); margin:12px 0 4px; }
+.search-detail h4:first-child { margin-top:0; }
+.search-detail ul { list-style:none; padding-left:0; }
+.search-detail ul li { font-size:13px; color:var(--text-secondary); padding:2px 0 2px 14px; position:relative; }
+.search-detail ul li::before { content:"•"; position:absolute; left:0; color:var(--primary); }
+.search-detail ol { padding-left:18px; }
+.search-detail ol li { font-size:13px; color:var(--text-secondary); padding:2px 0; line-height:1.6; }
 </style>
 </head>
 <body>
@@ -246,6 +308,10 @@ footer { text-align:center; padding:32px 24px; color:var(--text-light); font-siz
         <div class="theme-dot blue" data-theme="blue" title="简约蓝"></div>
         <div class="theme-dot purple" data-theme="purple" title="优雅紫"></div>
         <div class="theme-dot warm" data-theme="warm" title="经典棕"></div>
+      </div>
+      <div class="search-wrap">
+        <input class="search-input" id="searchInput" placeholder="搜索菜谱..." autocomplete="off">
+        <span class="search-icon">🔍</span>
       </div>
       <button class="refresh-btn" id="refreshBtn" title="刷新今日菜谱">🔄 换一换</button>
       <button class="today-btn" id="todayBtn" title="回到今天">今天</button>
@@ -280,6 +346,10 @@ footer { text-align:center; padding:32px 24px; color:var(--text-light); font-siz
       </div>
     </div>
   </div>
+</div>
+
+<div class="search-overlay" id="searchOverlay">
+  <div class="search-panel" id="searchPanel"></div>
 </div>
 
 <script>
@@ -613,6 +683,90 @@ function goToToday() {
   window.scrollTo({top:0,behavior:'smooth'});
 }
 
+// ============ Search ============
+var searchTimer = null;
+function performSearch(query) {
+  if (!query||query.trim().length===0) { closeSearch(); return; }
+  var q = query.trim().toLowerCase();
+  var results = RECIPES.filter(function(r) {
+    if (r.name.toLowerCase().indexOf(q)!==-1) return true;
+    if (r.description.toLowerCase().indexOf(q)!==-1) return true;
+    var allIngs = r.mainIngredients.concat(r.seasonings).join(' ').toLowerCase();
+    if (allIngs.indexOf(q)!==-1) return true;
+    if (r.category.indexOf(q)!==-1) return true;
+    return false;
+  });
+  showSearchPanel(results, q);
+}
+
+function showSearchPanel(results, query) {
+  var overlay = document.getElementById('searchOverlay');
+  var panel = document.getElementById('searchPanel');
+  overlay.classList.add('active');
+  if (results.length===0) {
+    panel.innerHTML = '<div class="search-panel-header"><h3>搜索结果</h3><button class="search-panel-close" onclick="closeSearch()">✕</button></div>'
+      + '<div class="search-empty">没有找到包含 "<b>' + escHtml(query) + '</b>" 的菜谱</div>';
+    return;
+  }
+  var catClass = { '荤菜':'cat-meat', '素菜':'cat-veg', '汤':'cat-soup' };
+  panel.innerHTML = '<div class="search-panel-header"><h3>找到 ' + results.length + ' 个菜谱</h3><button class="search-panel-close" onclick="closeSearch()">✕</button></div>'
+    + results.map(function(r) {
+      return '<div class="search-result-item" data-id="' + r.id + '">'
+        + '<span class="sri-icon">' + getRecipeIcon(r) + '</span>'
+        + '<div class="sri-info">'
+        + '<div class="sri-name">' + highlightMatch(r.name, query) + ' <span class="card-category ' + (catClass[r.category]||'') + '" style="font-size:11px;vertical-align:middle;">' + r.category + '</span></div>'
+        + '<div class="sri-desc">' + escHtml(r.description) + '</div>'
+        + '<div class="sri-meta"><span>⏱ ' + r.cookingTime + '</span><span>📊 ' + r.difficulty + '</span></div>'
+        + '</div></div>';
+    }).join('');
+  panel.querySelectorAll('.search-result-item').forEach(function(item) {
+    item.addEventListener('click', function() {
+      var id = parseInt(this.dataset.id);
+      var recipe = RECIPES.find(function(r) { return r.id===id; });
+      if (recipe) showRecipeDetail(recipe);
+    });
+  });
+}
+
+function highlightMatch(text, query) {
+  var idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx===-1) return escHtml(text);
+  return escHtml(text.slice(0,idx)) + '<b style="color:var(--primary);">' + escHtml(text.slice(idx,idx+query.length)) + '</b>' + escHtml(text.slice(idx+query.length));
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showRecipeDetail(recipe) {
+  var panel = document.getElementById('searchPanel');
+  var catClass = { '荤菜':'cat-meat', '素菜':'cat-veg', '汤':'cat-soup' };
+  panel.innerHTML = '<div class="search-detail">'
+    + '<span class="sd-back" onclick="backToSearchResults()">← 返回搜索结果</span>'
+    + '<div class="sd-name">' + getRecipeIcon(recipe) + ' ' + recipe.name + ' <span class="card-category ' + (catClass[recipe.category]||'') + '" style="font-size:12px;vertical-align:middle;">' + recipe.category + '</span></div>'
+    + '<div class="sd-desc">' + recipe.description + '</div>'
+    + '<div class="sd-meta"><span>⏱ ' + recipe.cookingTime + '</span><span>📊 ' + recipe.difficulty + '</span></div>'
+    + '<h4>主料</h4><ul>' + recipe.mainIngredients.map(function(i) { return '<li>' + i + '</li>'; }).join('') + '</ul>'
+    + '<h4>调料</h4><ul>' + recipe.seasonings.map(function(i) { return '<li>' + i + '</li>'; }).join('') + '</ul>'
+    + '<h4>做法</h4><ol>' + recipe.steps.map(function(s) { return '<li>' + s + '</li>'; }).join('') + '</ol>'
+    + '</div>';
+  panel.scrollTop = 0;
+}
+
+function backToSearchResults() {
+  var input = document.getElementById('searchInput');
+  if (input.value.trim()) {
+    performSearch(input.value);
+  } else {
+    closeSearch();
+  }
+}
+
+function closeSearch() {
+  document.getElementById('searchOverlay').classList.remove('active');
+  document.getElementById('searchInput').value = '';
+}
+
 // ============ Init ============
 function init() {
   var data = loadData();
@@ -642,7 +796,20 @@ function init() {
   });
   document.getElementById('todayBtn').addEventListener('click', goToToday);
   document.getElementById('refreshBtn').addEventListener('click', refreshToday);
-  document.addEventListener('keydown', function(e) { if(e.key==='Escape') closeCalendar(); });
+  // search
+  document.getElementById('searchInput').addEventListener('input', function() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function() { performSearch(this.value); }.bind(this), 250);
+  });
+  document.getElementById('searchInput').addEventListener('focus', function() {
+    if (this.value.trim()) performSearch(this.value);
+  });
+  document.getElementById('searchOverlay').addEventListener('click', function(e) {
+    if (e.target===this) closeSearch();
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.key==='Escape') { closeSearch(); closeCalendar(); }
+  });
 }
 
 document.addEventListener('DOMContentLoaded', function() { init(); });
