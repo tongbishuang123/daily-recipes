@@ -696,6 +696,13 @@ function performSearch(query) {
     if (r.category.indexOf(q)!==-1) return true;
     return false;
   });
+  results.sort(function(a, b) {
+    var aName = a.name.toLowerCase().indexOf(q)!==-1;
+    var bName = b.name.toLowerCase().indexOf(q)!==-1;
+    if (aName && !bName) return -1;
+    if (!aName && bName) return 1;
+    return 0;
+  });
   showSearchPanel(results, q);
 }
 
