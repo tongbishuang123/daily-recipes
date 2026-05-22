@@ -134,11 +134,12 @@ main { max-width:1200px; margin:0 auto; padding:24px; }
 .card-desc { font-size:13px; color:var(--text-secondary); margin-bottom:8px; line-height:1.5; }
 .card-meta { display:flex; gap:16px; font-size:12px; color:var(--text-light); }
 .card-expand { display:none; }
+.recipe-card.expanded { margin-bottom:380px; }
 .recipe-card.expanded .card-expand {
-  display:block; background:var(--card-bg);
-  max-height:360px; overflow-y:auto;
+  display:block; position:absolute; top:100%; left:0; right:0;
+  background:var(--card-bg); border-radius:0 0 var(--radius) var(--radius);
+  box-shadow:0 10px 25px rgba(0,0,0,0.15); max-height:360px; overflow-y:auto;
   padding:16px 18px; border-top:1px solid var(--border);
-  box-shadow:inset 0 4px 8px rgba(0,0,0,0.04);
 }
 .card-expand h4 { font-size:13px; color:var(--primary); margin:10px 0 4px; transition:color var(--transition); }
 .card-expand h4:first-child { margin-top:0; }
@@ -584,12 +585,15 @@ function renderRecipes(recipeIds, targetDateStr) {
   });
 }
 
+var cardZIndex = 10;
 function toggleCard(el) {
   var card = el.closest('.recipe-card');
   card.classList.toggle('expanded');
   var expanded = card.classList.contains('expanded');
   el.textContent = expanded ? '收起详情 ▴' : '展开查看详情 ▾';
   if (expanded) {
+    cardZIndex++;
+    card.style.zIndex = cardZIndex;
     card.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 }
