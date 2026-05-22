@@ -634,6 +634,11 @@ function onCalDayClick(dateStr, el) {
   if (el) el.classList.add('selected');
   var data = loadData();
   var recipeIds = data.history[dateStr];
+  // auto-generate for past dates without history using date-seeded shuffle
+  if ((!recipeIds||recipeIds.length===0) && dateStr < getTodayStr()) {
+    recipeIds = selectRecipesForDate(dateStr, data);
+    renderCalendar(); // refresh dots
+  }
   var div = document.getElementById('calRecipes');
   if (!recipeIds||recipeIds.length===0) {
     div.innerHTML = '<p style="color:var(--text-light);text-align:center;padding:20px 0;">' + (dateStr===getTodayStr()?'今天还没有生成食谱，请回到首页查看':'该日期暂无食谱记录') + '</p>';
@@ -779,6 +784,14 @@ function init() {
   var data = loadData();
   var todayStr = getTodayStr();
   applyTheme(data.theme);
+
+  // auto-finalize yesterday's recipe (11:59 PM rule)
+  var yesterday = new Date();
+  yesterday.setDate(yesterday.getDate()-1);
+  var yStr = yesterday.getFullYear() + '-' + String(yesterday.getMonth()+1).padStart(2,'0') + '-' + String(yesterday.getDate()).padStart(2,'0');
+  if (!data.history[yStr]) {
+    selectRecipesForDate(yStr, data);
+  }
 
   var displayDate = todayStr;
   if (data.viewedDate && data.viewedDate !== todayStr) {
