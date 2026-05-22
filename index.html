@@ -131,6 +131,57 @@ main { max-width:1200px; margin:0 auto; padding:24px; }
   position:absolute; top:12px; left:12px; padding:4px 12px;
   border-radius:12px; font-size:12px; font-weight:600; color:#fff; z-index:1;
 }
+.card-fav {
+  position:absolute; top:10px; right:10px; z-index:2; font-size:24px;
+  cursor:pointer; filter:drop-shadow(0 1px 3px rgba(0,0,0,0.4));
+  transition:transform var(--transition); user-select:none; line-height:1;
+}
+.card-fav:hover { transform:scale(1.25); }
+.card-fav.faved { color:#f5a623; filter:drop-shadow(0 1px 3px rgba(245,166,35,0.5)); }
+.fav-btn {
+  border:none; background:var(--card-bg); border-radius:20px; padding:8px 14px;
+  font-size:13px; cursor:pointer; color:var(--text); border:1.5px solid var(--border);
+  transition:all var(--transition); white-space:nowrap;
+}
+.fav-btn:hover { border-color:var(--primary); color:var(--primary); }
+.fav-overlay {
+  display:none; position:fixed; top:0; left:0; right:0; bottom:0;
+  background:var(--modal-overlay); z-index:150; justify-content:center; align-items:flex-start;
+  padding:100px 20px 20px; overflow-y:auto;
+}
+.fav-overlay.active { display:flex; }
+.fav-panel {
+  background:var(--card-bg); border-radius:var(--radius); max-width:700px; width:100%;
+  box-shadow:0 20px 60px rgba(0,0,0,0.2); overflow:hidden;
+}
+.fav-item {
+  display:flex; align-items:center; gap:12px; padding:14px 20px;
+  cursor:pointer; border-bottom:1px solid var(--border); transition:background var(--transition);
+}
+.fav-item:last-child { border-bottom:none; }
+.fav-item:hover { background:var(--primary-light); }
+.fav-item .fvi-icon { font-size:32px; width:44px; text-align:center; flex-shrink:0; }
+.fav-item .fvi-info { flex:1; min-width:0; }
+.fav-item .fvi-name { font-size:16px; font-weight:600; color:var(--text); }
+.fav-item .fvi-desc { font-size:12px; color:var(--text-secondary); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.fav-item .fvi-meta { font-size:12px; color:var(--text-light); margin-top:4px; }
+.fav-item .fvi-remove {
+  border:none; background:none; font-size:18px; cursor:pointer; color:var(--text-light);
+  flex-shrink:0; padding:4px; transition:color var(--transition);
+}
+.fav-item .fvi-remove:hover { color:#e74c3c; }
+.fav-panel-header {
+  padding:16px 20px; border-bottom:1px solid var(--border); display:flex;
+  justify-content:space-between; align-items:center;
+}
+.fav-panel-header h3 { font-size:16px; color:var(--text); }
+.fav-panel-close {
+  width:28px; height:28px; border:none; background:var(--border); border-radius:50%;
+  cursor:pointer; font-size:14px; display:flex; align-items:center; justify-content:center;
+  color:var(--text-secondary);
+}
+.fav-panel-close:hover { background:#ddd; }
+.fav-empty { text-align:center; padding:40px 20px; color:var(--text-light); font-size:14px; }
 .cat-meat { background:var(--badge-meat); }
 .cat-veg { background:var(--badge-veg); }
 .cat-soup { background:var(--badge-soup); }
@@ -335,6 +386,7 @@ footer { text-align:center; padding:32px 24px; color:var(--text-light); font-siz
         <div class="search-history" id="searchHistory"></div>
         <span class="search-icon">🔍</span>
       </div>
+      <button class="fav-btn" id="favBtn" title="收藏夹">⭐ 收藏</button>
       <button class="refresh-btn" id="refreshBtn" title="刷新今日菜谱">🔄 换一换</button>
       <button class="today-btn" id="todayBtn" title="回到今天">今天</button>
       <button class="cal-btn" id="calBtn">📅 历史食谱</button>
@@ -372,6 +424,10 @@ footer { text-align:center; padding:32px 24px; color:var(--text-light); font-siz
 
 <div class="search-overlay" id="searchOverlay">
   <div class="search-panel" id="searchPanel"></div>
+</div>
+
+<div class="fav-overlay" id="favOverlay">
+  <div class="fav-panel" id="favPanel"></div>
 </div>
 
 <script>
@@ -571,11 +627,14 @@ function renderRecipes(recipeIds, targetDateStr) {
   var catClass = { '荤菜':'cat-meat', '素菜':'cat-veg', '汤':'cat-soup' };
 
   function makeCard(r) {
+    var favs = loadFavorites();
+    var isFaved = favs.indexOf(r.id) !== -1;
     return '<div class="recipe-card ' + (r.category==='汤'?'soup-card':'') + '" data-recipe-id="' + r.id + '">'
       + '<div class="card-img-wrap">'
       + (r.image ? '<img class="card-img" src="' + r.image + '" alt="' + r.name + '" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';">' : '')
       + '<span class="card-icon" style="' + (r.image ? 'display:none' : '') + '">' + getRecipeIcon(r) + '</span>'
       + '<span class="card-category ' + (catClass[r.category]||'') + '">' + r.category + '</span>'
+      + '<span class="card-fav' + (isFaved ? ' faved' : '') + '" data-id="' + r.id + '" onclick="toggleFav(event, this)">' + (isFaved ? '★' : '☆') + '</span>'
       + '</div>'
       + '<div class="card-body">'
       + '<div class="card-name">' + r.name + '</div>'
@@ -632,6 +691,109 @@ function applyTheme(theme) {
     d.classList.toggle('active', d.dataset.theme===theme);
   });
   var data = loadData(); data.theme = theme; saveData(data);
+}
+
+// ============ Favorites ============
+function loadFavorites() {
+  try {
+    var raw = localStorage.getItem('recipeFavorites');
+    return raw ? JSON.parse(raw) : [];
+  } catch(e) { return []; }
+}
+
+function saveFavorites(ids) {
+  try { localStorage.setItem('recipeFavorites', JSON.stringify(ids)); } catch(e) {}
+}
+
+function toggleFav(e, el) {
+  e.stopPropagation();
+  var id = parseInt(el.getAttribute('data-id'));
+  var favs = loadFavorites();
+  var idx = favs.indexOf(id);
+  if (idx !== -1) {
+    favs.splice(idx, 1);
+    el.classList.remove('faved');
+    el.textContent = '☆';
+  } else {
+    favs.push(id);
+    el.classList.add('faved');
+    el.textContent = '★';
+  }
+  saveFavorites(favs);
+}
+
+function showFavorites() {
+  var overlay = document.getElementById('favOverlay');
+  var panel = document.getElementById('favPanel');
+  var favs = loadFavorites();
+  if (!favs.length) {
+    panel.innerHTML = '<div class="fav-panel-header"><h3>收藏夹</h3><button class="fav-panel-close" onclick="closeFavorites()">✕</button></div>'
+      + '<div class="fav-empty">还没有收藏任何菜谱<br>点击菜谱卡片上的 ☆ 即可收藏</div>';
+  } else {
+    var recipes = favs.map(function(id) { return RECIPES.find(function(r) { return r.id===id; }); }).filter(Boolean);
+    panel.innerHTML = '<div class="fav-panel-header"><h3>收藏夹 (' + recipes.length + ')</h3><button class="fav-panel-close" onclick="closeFavorites()">✕</button></div>'
+      + recipes.map(function(r) {
+          return '<div class="fav-item" data-id="' + r.id + '">'
+            + '<span class="fvi-icon">' + getRecipeIcon(r) + '</span>'
+            + '<div class="fvi-info">'
+            + '<div class="fvi-name">' + r.name + '</div>'
+            + '<div class="fvi-desc">' + r.description + '</div>'
+            + '<div class="fvi-meta">⏱ ' + r.cookingTime + ' · ' + r.difficulty + ' · ' + r.category + '</div>'
+            + '</div>'
+            + '<button class="fvi-remove" data-id="' + r.id + '" title="取消收藏">✕</button>'
+            + '</div>';
+        }).join('');
+    panel.querySelectorAll('.fav-item').forEach(function(item) {
+      item.addEventListener('click', function(e) {
+        if (e.target.closest('.fvi-remove')) return;
+        var id = parseInt(this.dataset.id);
+        var recipe = RECIPES.find(function(r) { return r.id===id; });
+        if (recipe) { closeFavorites(); showRecipeDetailInSearch(recipe); }
+      });
+    });
+    panel.querySelectorAll('.fvi-remove').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var id = parseInt(this.getAttribute('data-id'));
+        var favs2 = loadFavorites();
+        var idx2 = favs2.indexOf(id);
+        if (idx2 !== -1) { favs2.splice(idx2, 1); saveFavorites(favs2); }
+        showFavorites();
+        updateAllFavStars();
+      });
+    });
+  }
+  overlay.classList.add('active');
+}
+
+function closeFavorites() {
+  document.getElementById('favOverlay').classList.remove('active');
+}
+
+function updateAllFavStars() {
+  var favs = loadFavorites();
+  document.querySelectorAll('.card-fav').forEach(function(el) {
+    var id = parseInt(el.getAttribute('data-id'));
+    var isFaved = favs.indexOf(id) !== -1;
+    if (isFaved) { el.classList.add('faved'); el.textContent = '★'; }
+    else { el.classList.remove('faved'); el.textContent = '☆'; }
+  });
+}
+
+function showRecipeDetailInSearch(recipe) {
+  var overlay = document.getElementById('searchOverlay');
+  var panel = document.getElementById('searchPanel');
+  var catClass = { '荤菜':'cat-meat', '素菜':'cat-veg', '汤':'cat-soup' };
+  panel.innerHTML = '<div class="search-panel-header"><h3>菜谱详情</h3><button class="search-panel-close" onclick="closeSearch()">✕</button></div>'
+    + '<div class="search-detail">'
+    + '<div class="sd-name">' + getRecipeIcon(recipe) + ' ' + recipe.name + ' <span class="card-category ' + (catClass[recipe.category]||'') + '" style="font-size:12px;vertical-align:middle;">' + recipe.category + '</span></div>'
+    + '<div class="sd-desc">' + recipe.description + '</div>'
+    + '<div class="sd-meta"><span>⏱ ' + recipe.cookingTime + '</span><span>📊 ' + recipe.difficulty + '</span></div>'
+    + '<h4>主料</h4><ul>' + recipe.mainIngredients.map(function(i) { return '<li>' + i + '</li>'; }).join('') + '</ul>'
+    + '<h4>调料</h4><ul>' + recipe.seasonings.map(function(i) { return '<li>' + i + '</li>'; }).join('') + '</ul>'
+    + '<h4>做法</h4><ol>' + recipe.steps.map(function(s) { return '<li>' + s + '</li>'; }).join('') + '</ol>'
+    + '</div>';
+  overlay.classList.add('active');
 }
 
 // ============ Calendar ============
@@ -932,8 +1094,12 @@ function init() {
   document.getElementById('searchOverlay').addEventListener('click', function(e) {
     if (e.target===this) closeSearch();
   });
+  document.getElementById('favBtn').addEventListener('click', showFavorites);
+  document.getElementById('favOverlay').addEventListener('click', function(e) {
+    if (e.target===this) closeFavorites();
+  });
   document.addEventListener('keydown', function(e) {
-    if (e.key==='Escape') { closeSearch(); closeCalendar(); }
+    if (e.key==='Escape') { closeSearch(); closeCalendar(); closeFavorites(); }
   });
 }
 
